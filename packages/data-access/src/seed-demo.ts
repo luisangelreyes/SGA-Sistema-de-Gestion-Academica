@@ -23,10 +23,10 @@ async function main() {
   const rolAdmin = await prisma.rol.findUnique({ where: { codigo: 'ADMIN' } });
 
   // 2. Usuario Demo
-  const passwordHash = '$2b$10$gfEBmzHxV4ghRKR901mMg.VjgyQFtX2wt3.Ja6hWP6ORVCLVw66ie'; // admin123
+  const passwordHash = '$2b$10$Gl/utXU5yENQlcWKJbGL2.8MNuhg8RRuHM/iOWZLEz/6FLULzMXIG'; // admin123
   const adminUser = await prisma.usuario.upsert({
     where: { nombreUsuario: 'admin' },
-    update: {},
+    update: { passwordHash },
     create: {
       nombreUsuario: 'admin',
       nombreCompleto: 'Administrador Demo',
