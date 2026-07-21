@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "frontend-v2"
   ],
   "scripts": {
     "postinstall": "npm run db:generate --workspace=@sga/data-access",
