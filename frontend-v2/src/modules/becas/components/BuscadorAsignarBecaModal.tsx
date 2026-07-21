@@ -15,7 +15,8 @@ export function BuscadorAsignarBecaModal({ isOpen, onClose, onAsignado }: Props)
   const [becaId, setBecaId] = useState<number | ''>('');
   const [cicloId, setCicloId] = useState<number | ''>('');
 
-  const { data: alumnos, isLoading: loadingAlumnos } = trpc.alumnos.getAll.useQuery(undefined, { enabled: isOpen });
+
+  const { data: alumnos } = trpc.alumnos.getAll.useQuery(undefined, { enabled: isOpen });
   const { data: becas, isLoading: loadingBecas } = trpc.becas.getBecas.useQuery(undefined, { enabled: isOpen });
   const { data: ciclos, isLoading: loadingCiclos } = trpc.grupos.getCiclos.useQuery(undefined, { enabled: isOpen });
   

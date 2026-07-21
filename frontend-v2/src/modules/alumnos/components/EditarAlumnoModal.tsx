@@ -14,7 +14,8 @@ const editarAlumnoSchema = z.object({
   nivelId: z.string().min(1, 'Obligatorio'),
   // Campos extraídos del diseño pero que se ignorarán al enviar si el back no los requiere
   gradoId: z.string().optional(),
-  seccionId: z.string().optional()
+  seccionId: z.string().optional(),
+  planPagoId: z.string().optional()
 });
 
 type EditarAlumnoForm = z.infer<typeof editarAlumnoSchema>;
@@ -49,7 +50,7 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
   const { data: grados } = trpc.grupos.getGrados.useQuery(undefined, { enabled: isOpen });
   const { data: grupos } = trpc.grupos.getGrupos.useQuery(undefined, { enabled: isOpen });
   const { data: ciclos } = trpc.grupos.getCiclos.useQuery(undefined, { enabled: isOpen });
-  const { data: planesPago } = trpc.inscripciones.getPlanesPago.useQuery(undefined, { enabled: isOpen });
+  // const { data: planesPago } = trpc.inscripciones.getPlanesPago.useQuery(undefined, { enabled: isOpen });
   const updateAlumnoMutation = trpc.alumnos.update.useMutation();
 
   const cicloActivo = ciclos?.find(c => c.activo);
@@ -57,7 +58,7 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
   const watchNivelId = watch('nivelId');
   const watchGradoId = watch('gradoId');
   const gradosFiltrados = grados?.filter(g => g.nivelId.toString() === watchNivelId);
-  const gruposFiltrados = grupos?.filter(g => g.gradoId.toString() === watchGradoId && g.nivelId.toString() === watchNivelId);
+  // const gruposFiltrados = grupos?.filter(g => g.gradoId.toString() === watchGradoId && g.nivelId.toString() === watchNivelId);
 
   useEffect(() => {
     if (isOpen && alumno) {

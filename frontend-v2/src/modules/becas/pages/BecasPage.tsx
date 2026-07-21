@@ -105,10 +105,10 @@ export function BecasPage() {
     b.criterio.toLowerCase().includes(busquedaCatalogo.toLowerCase())
   ) || [];
 
-  const asignacionesFiltradas = asignaciones?.filter((a) => 
-    a.alumno.nombreCompleto.toLowerCase().includes(busquedaAlumnos.toLowerCase()) ||
-    a.beca.nombreBeca.toLowerCase().includes(busquedaAlumnos.toLowerCase()) ||
-    a.alumno.matricula?.toLowerCase().includes(busquedaAlumnos.toLowerCase())
+  const asignacionesFiltradas = (asignaciones as any[])?.filter((a: any) => 
+    a.alumno?.nombreCompleto?.toLowerCase().includes(busquedaAlumnos.toLowerCase()) ||
+    a.beca?.nombreBeca?.toLowerCase().includes(busquedaAlumnos.toLowerCase()) ||
+    a.alumno?.matricula?.toLowerCase().includes(busquedaAlumnos.toLowerCase())
   ) || [];
 
   return (

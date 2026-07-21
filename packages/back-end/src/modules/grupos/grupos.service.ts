@@ -7,10 +7,8 @@ import type {
   CreateMateriaInput, UpdateMateriaInput,
   CreateGrupoInput, UpdateGrupoInput,
   AssignMateriaGrupoInput, UnassignMateriaGrupoInput,
-  GetAlumnosCierreGrupoInput,
   CerrarCicloGrupoInput,
   ReinscripcionMasivaGrupoInput,
-  GetGradosParaInicializarInput,
   InicializarGruposSeleccionadosInput
 } from './grupos.schema';
 import { InscripcionesService } from '../inscripciones/inscripciones.service';
