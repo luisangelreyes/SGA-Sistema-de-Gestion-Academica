@@ -5,6 +5,7 @@
   "main": "dist/back-end/src/index.js",
   "bin": "dist/back-end/src/index.js",
   "scripts": {
+    "start": "npx tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "test": "vitest",
