@@ -71,7 +71,7 @@ async function main() {
       }
 
       // Asignar permisos de módulo básicos para la interfaz
-      const modulos = ['Alumnos', 'Tutores', 'Grupos', 'Materias', 'Pagos', 'Configuracion', 'Usuarios'];
+      const modulos = ['Alumnos', 'Tutores', 'Grupos', 'Materias', 'Pagos', 'Configuracion', 'Usuarios', 'Calificaciones'];
       const nivelPermiso = r.rol === 'ADMIN' ? 'LECTURA_Y_ESCRITURA' : 'LECTURA';
       
       for (const mod of modulos) {

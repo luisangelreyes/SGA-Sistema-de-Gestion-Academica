@@ -1,9 +1,9 @@
 import { prisma } from '@sga/data-access';
 import { TRPCError } from '@trpc/server';
 import { AlumnosRepository } from './alumnos.repository';
-import type { 
-  CreateAlumnoInput, UpdateAlumnoInput, 
-  LinkTutorInput, UnlinkTutorInput 
+import type {
+  CreateAlumnoInput, UpdateAlumnoInput,
+  LinkTutorInput, UnlinkTutorInput
 } from './alumnos.schema';
 
 export class AlumnosService {
@@ -90,7 +90,7 @@ export class AlumnosService {
    * Actualiza la información del alumno (incluyendo bajas)
    */
   static async updateAlumno(input: UpdateAlumnoInput) {
-    const { alumnoId, fechaNacimiento, fechaBaja, nivelId, gradoId, grupoId, ...data } = input;
+    const { alumnoId, fechaNacimiento, fechaBaja, nivelId, gradoId, grupoId, planPagoId, ...data } = input;
 
     const existing = await AlumnosRepository.getAlumnoDetail(alumnoId);
     if (!existing || existing.eliminadoEn) {
@@ -114,23 +114,46 @@ export class AlumnosService {
     const updatedAlumno = await AlumnosRepository.updateAlumno(alumnoId, updateData);
 
     // Actualizar la inscripción activa del alumno si se envió grado o grupo
-    if (gradoId !== undefined || grupoId !== undefined) {
-      const inscripcionActiva = await prisma.inscripcionCiclo.findFirst({
-        where: {
-          alumnoId,
-          eliminadoEn: null,
-          ciclo: { activo: true }
-        }
-      });
-
-      if (inscripcionActiva) {
-        await prisma.inscripcionCiclo.update({
-          where: { inscripcionId: inscripcionActiva.inscripcionId },
-          data: {
-            ...(gradoId !== undefined && { gradoId }),
-            ...(grupoId !== undefined && { grupoId })
+    if (gradoId !== undefined || grupoId !== undefined || planPagoId !== undefined) {
+      const cicloActivo = await prisma.cicloEscolar.findFirst({ where: { activo: true } });
+      if (cicloActivo) {
+        const inscripcionActiva = await prisma.inscripcionCiclo.findFirst({
+          where: {
+            alumnoId,
+            eliminadoEn: null,
+            cicloId: cicloActivo.cicloId
           }
         });
+
+        if (inscripcionActiva) {
+          await prisma.inscripcionCiclo.update({
+            where: { inscripcionId: inscripcionActiva.inscripcionId },
+            data: {
+              ...(gradoId !== undefined && { gradoId }),
+              ...(grupoId !== undefined && { grupoId: grupoId === null ? null : grupoId }),
+              ...(planPagoId !== undefined && { planPagoId: planPagoId === null ? null : planPagoId })
+            }
+          });
+        } else if (grupoId && planPagoId) {
+          // No está inscrito en el ciclo activo, pero proporcionaron grupo y plan de pagos -> ¡Inscribir automáticamente!
+          const InscripcionesService = require('../inscripciones/inscripciones.service').InscripcionesService;
+
+          const nuevaInscripcion = await InscripcionesService.createInscripcion({
+            alumnoId,
+            cicloId: cicloActivo.cicloId,
+            grupoId: grupoId,
+            gradoId: gradoId,
+            fechaIngreso: new Date().toISOString(),
+            esIngresoTardio: false,
+            estadoEnCiclo: 'INSCRITO',
+            estadoFinanciero: 'AL_CORRIENTE'
+          });
+
+          await InscripcionesService.asignarPlanPago({
+            inscripcionId: nuevaInscripcion.inscripcionId,
+            planPagoId
+          });
+        }
       }
     }
 
@@ -203,8 +226,8 @@ export class AlumnosService {
 
     if (existingRel) {
       return AlumnosRepository.updateTutorAlumnoRelation(
-        existingRel.tutorAlumnoId, 
-        Boolean(finalEsPrincipal), 
+        existingRel.tutorAlumnoId,
+        Boolean(finalEsPrincipal),
         input.parentesco
       );
     }

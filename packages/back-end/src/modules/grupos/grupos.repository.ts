@@ -88,6 +88,22 @@ export class GruposRepository {
           }));
           await tx.grupo.createMany({ data: newGrupos });
         }
+
+        const tarifasAntiguas = await tx.tarifa.findMany({
+          where: { cicloId: clonarDesdeCicloId, eliminadoEn: null }
+        });
+
+        if (tarifasAntiguas.length > 0) {
+          const newTarifas = tarifasAntiguas.map(t => ({
+            cicloId: newCiclo.cicloId,
+            nivelId: t.nivelId,
+            concepto: t.concepto,
+            monto: t.monto,
+            descripcion: t.descripcion,
+            activa: t.activa
+          }));
+          await tx.tarifa.createMany({ data: newTarifas });
+        }
       }
 
       return newCiclo;

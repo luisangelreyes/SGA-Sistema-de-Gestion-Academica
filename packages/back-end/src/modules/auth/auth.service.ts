@@ -54,8 +54,8 @@ export class AuthService {
     await this.registrarIntentoLogin(usuario.usuarioId, input.identificador, true, ip, userAgent);
 
     // Sincronizar permisos faltantes (ej. si se añadieron nuevos módulos)
-    const rolesNombres = usuario.roles.map(r => r.rol.nombre);
-    const permisosPorDefecto = getDefaultPermissions(rolesNombres);
+    const rolesCodigos = usuario.roles.map(r => r.rol.codigo);
+    const permisosPorDefecto = getDefaultPermissions(rolesCodigos);
     
     for (const pd of permisosPorDefecto) {
       if (!usuario.permisosModulos.some(pm => pm.modulo === pd.modulo)) {

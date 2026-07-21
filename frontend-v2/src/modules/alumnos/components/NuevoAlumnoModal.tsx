@@ -46,7 +46,10 @@ export function NuevoAlumnoModal({ isOpen, onClose, onSuccess }: NuevoAlumnoModa
   const { data: niveles } = trpc.grupos.getNiveles.useQuery(undefined, { enabled: isOpen });
   const { data: grados } = trpc.grupos.getGrados.useQuery(undefined, { enabled: isOpen });
   const { data: grupos } = trpc.grupos.getGrupos.useQuery(undefined, { enabled: isOpen });
+  const { data: ciclos } = trpc.grupos.getCiclos.useQuery(undefined, { enabled: isOpen });
   const createAlumnoMutation = trpc.alumnos.create.useMutation();
+
+  const cicloActivo = ciclos?.find(c => c.activo);
 
   const watchNivelId = watch('nivelId');
   const watchGradoId = watch('gradoId');
@@ -214,10 +217,12 @@ export function NuevoAlumnoModal({ isOpen, onClose, onSuccess }: NuevoAlumnoModa
                   disabled={!watchGradoId}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 outline-none text-sm bg-white disabled:opacity-50"
                 >
-                  <option value="">Selecciona Sec...</option>
-                  {gruposFiltrados?.map(g => (
-                    <option key={g.grupoId} value={g.grupoId.toString()}>{g.nombre}</option>
-                  ))}
+                  <option value="">Sin grupo asignado</option>
+                  {grupos
+                    ?.filter((g: any) => g.gradoId === parseInt(watchGradoId || '0') && g.cicloId === cicloActivo?.cicloId)
+                    .map((g: any) => (
+                      <option key={g.grupoId} value={g.grupoId.toString()}>{g.nombre}</option>
+                    ))}
                 </select>
               </div>
             </div>

@@ -10,8 +10,9 @@ import { Input } from '../../../components/ui/Input';
 import { CicloFormModal } from '../components/CicloFormModal';
 import { ReinscripcionMasivaModal } from '../components/ReinscripcionMasivaModal';
 import { ConfiguracionPromocionesTab } from '../components/ConfiguracionPromocionesTab';
+import { ConfiguracionPlanesPagoTab } from '../components/ConfiguracionPlanesPagoTab';
 
-type TabType = 'ciclos' | 'tarifas' | 'promociones' | 'cierre';
+type TabType = 'ciclos' | 'tarifas' | 'planes-pago' | 'promociones' | 'cierre';
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<TabType>('ciclos');
@@ -223,6 +224,16 @@ export function ConfiguracionPage() {
           }`}
         >
           Finanzas y Tarifas
+        </button>
+        <button
+          onClick={() => setActiveTab('planes-pago')}
+          className={`px-6 py-3 font-semibold text-sm transition-all border-b-2 cursor-pointer ${
+            activeTab === 'planes-pago'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-500 hover:text-navy-800'
+          }`}
+        >
+          Planes de Pago
         </button>
         <button
           onClick={() => setActiveTab('promociones')}
@@ -462,6 +473,12 @@ export function ConfiguracionPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'planes-pago' && (
+          <div className="space-y-6">
+            <ConfiguracionPlanesPagoTab />
           </div>
         )}
 

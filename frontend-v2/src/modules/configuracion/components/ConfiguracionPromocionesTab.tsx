@@ -10,7 +10,7 @@ export function ConfiguracionPromocionesTab() {
   const { data: grados } = trpc.grupos.getGrados.useQuery();
   const { data: ventanas, refetch: refetchVentanas } = trpc.inscripciones.getVentanas.useQuery();
   const { data: becas, refetch: refetchBecas } = trpc.becas.getBecas.useQuery();
-  
+
   // Mutations
   const createVentana = trpc.inscripciones.createVentana.useMutation({
     onSuccess: () => {
@@ -147,7 +147,7 @@ export function ConfiguracionPromocionesTab() {
 
   return (
     <div className="space-y-8">
-      
+
       {/* 1. Catálogo Global de Becas */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -157,15 +157,15 @@ export function ConfiguracionPromocionesTab() {
         <p className="text-sm text-gray-500 mb-4">
           Crea becas generales que podrás asignar manualmente a cualquier alumno desde su expediente.
         </p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
           <div>
             <label className="block text-sm text-gray-700 font-medium mb-1">Nombre</label>
-            <input 
-              type="text" 
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-              value={nombreBeca} 
-              onChange={e => setNombreBeca(e.target.value)} 
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              value={nombreBeca}
+              onChange={e => setNombreBeca(e.target.value)}
               placeholder="Ej. Beca Talento Primaria"
             />
           </div>
@@ -183,22 +183,22 @@ export function ConfiguracionPromocionesTab() {
           </div>
           <div>
             <label className="block text-sm text-gray-700 font-medium mb-1">Descuento (%)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               min="0" max="100"
-              className="w-full p-2 border rounded-lg outline-none" 
-              value={porcentajeBeca} 
-              onChange={e => setPorcentajeBeca(e.target.value)} 
+              className="w-full p-2 border rounded-lg outline-none"
+              value={porcentajeBeca}
+              onChange={e => setPorcentajeBeca(e.target.value)}
               placeholder="Ej. 20"
             />
           </div>
           <div>
             <label className="block text-sm text-gray-700 font-medium mb-1">Descripción</label>
-            <input 
-              type="text" 
-              className="w-full p-2 border rounded-lg outline-none" 
-              value={descripcion} 
-              onChange={e => setDescripcion(e.target.value)} 
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg outline-none"
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
               placeholder="Opcional"
             />
           </div>
@@ -222,21 +222,21 @@ export function ConfiguracionPromocionesTab() {
                   {b.nombreBeca} <span className="text-sm font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full ml-2">{b.criterio}</span>
                 </p>
                 <p className="text-sm text-gray-600 font-medium mt-1">
-                  <Percent size={14} className="inline mr-1 text-green-600"/>
+                  <Percent size={14} className="inline mr-1 text-green-600" />
                   {b.porcentaje}% de Descuento
                 </p>
                 {b.descripcion && <p className="text-xs text-gray-500 mt-1">{b.descripcion}</p>}
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => handleEditBeca(b)}
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg"
                   title="Editar Beca"
                 >
                   <Edit2 size={18} />
                 </button>
-                <button 
-                  onClick={() => { if(window.confirm(`¿Seguro que deseas eliminar la beca ${b.nombreBeca}?`)) deleteBeca.mutate(b.becaId); }}
+                <button
+                  onClick={() => { if (window.confirm(`¿Seguro que deseas eliminar la beca ${b.nombreBeca}?`)) deleteBeca.mutate(b.becaId); }}
                   className="text-red-500 hover:bg-red-50 p-2 rounded-lg"
                   title="Eliminar Beca"
                 >
@@ -258,7 +258,7 @@ export function ConfiguracionPromocionesTab() {
         <p className="text-sm text-gray-500 mb-4">
           Configura ventanas de tiempo donde las inscripciones obtendrán un descuento automático según su nivel educativo.
         </p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
           <div>
             <label className="block text-sm text-gray-700 font-medium mb-1">Ciclo</label>
@@ -283,13 +283,13 @@ export function ConfiguracionPromocionesTab() {
           </div>
           <div>
             <label className="block text-sm text-gray-700 font-medium mb-1">Desc. Inscripción (%)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               min="0"
               max="100"
-              className="w-full p-2 border rounded-lg outline-none" 
-              value={descuentoInscripcion} 
-              onChange={e => setDescuentoInscripcion(e.target.value)} 
+              className="w-full p-2 border rounded-lg outline-none"
+              value={descuentoInscripcion}
+              onChange={e => setDescuentoInscripcion(e.target.value)}
               placeholder="Ej. 50"
             />
           </div>
@@ -315,7 +315,7 @@ export function ConfiguracionPromocionesTab() {
               </Button>
             )}
             <Button onClick={handleCreateVentana} disabled={createVentana.isPending || updateVentana.isPending}>
-              {editingVentanaId ? <><Edit2 size={16} /> Guardar Cambios</> : <><Plus size={16} /> Agregar Ventana Automática</>}
+              {editingVentanaId ? <><Edit2 size={16} /> Guardar Cambios</> : <><Plus size={16} /> Agregar Promocion</>}
             </Button>
           </div>
         </div>
@@ -325,8 +325,8 @@ export function ConfiguracionPromocionesTab() {
             <div key={v.ventanaId} className="flex justify-between items-center p-4 border rounded-xl hover:bg-gray-50 transition-colors">
               <div>
                 <p className="font-bold text-gray-800">
-                  <Percent size={14} className="inline mr-1 text-green-600"/>
-                  {v.descuentoInscripcion}% Inscripción 
+                  <Percent size={14} className="inline mr-1 text-green-600" />
+                  {v.descuentoInscripcion}% Inscripción
                   {v.beca ? ` + ${v.beca.porcentaje}% Beca Colegiatura` : ''}
                 </p>
                 <p className="text-sm text-gray-600 font-medium">
@@ -337,15 +337,15 @@ export function ConfiguracionPromocionesTab() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => handleEditVentana(v)}
                   className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg"
                   title="Editar Ventana"
                 >
                   <Edit2 size={18} />
                 </button>
-                <button 
-                  onClick={() => { if(window.confirm('¿Eliminar esta regla automática?')) deleteVentana.mutate(v.ventanaId); }}
+                <button
+                  onClick={() => { if (window.confirm('¿Eliminar esta regla automática?')) deleteVentana.mutate(v.ventanaId); }}
                   className="text-red-500 hover:bg-red-50 p-2 rounded-lg"
                   title="Eliminar Ventana"
                 >

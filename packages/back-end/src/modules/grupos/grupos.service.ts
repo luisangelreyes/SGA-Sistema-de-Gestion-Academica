@@ -601,12 +601,14 @@ export class GruposService {
           throw new Error('Grupo destino es requerido para alumnos no egresados');
         }
 
+        const grupoDest = await prisma.grupo.findUnique({ where: { grupoId: promo.grupoIdDestino } });
+
         // 1. Crear Inscripcion
         const nuevaInscripcion = await InscripcionesService.createInscripcion({
           alumnoId: promo.alumnoId,
           cicloId: cicloIdDestino,
           grupoId: promo.grupoIdDestino,
-          gradoId: null, // Asumimos que createInscripcion resolverá o no se requiere estricto aquí si hay grupo
+          gradoId: grupoDest ? grupoDest.gradoId : undefined,
           fechaIngreso: new Date().toISOString(),
           esIngresoTardio: false,
           estadoEnCiclo: 'INSCRITO',

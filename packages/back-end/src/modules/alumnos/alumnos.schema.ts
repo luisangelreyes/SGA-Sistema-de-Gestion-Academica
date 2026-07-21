@@ -29,7 +29,8 @@ export const createAlumnoSchema = z.object({
 export const updateAlumnoSchema = createAlumnoSchema.partial().extend({
   alumnoId: z.number().int().positive(),
   fechaBaja: z.string().datetime().optional().nullable(),
-  motivoBaja: z.string().optional().nullable()
+  motivoBaja: z.string().optional().nullable(),
+  planPagoId: z.number().int().positive().optional().nullable()
 });
 
 export const linkTutorSchema = z.object({

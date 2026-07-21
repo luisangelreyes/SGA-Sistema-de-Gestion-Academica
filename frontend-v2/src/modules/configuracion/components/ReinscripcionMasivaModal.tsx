@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Users, ArrowRight, Save } from 'lucide-react';
 import { trpc } from '../../../lib/trpc';
 import { Button } from '../../../components/ui/Button';
@@ -32,30 +32,41 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
   });
 
   const [grupoIdDestino, setGrupoIdDestino] = useState('');
-  const [planPagoId, setPlanPagoId] = useState('');
+  const [planPagoId, setPlanPagoId] = useState(''); // Plan por defecto
+  const [planesSeleccionados, setPlanesSeleccionados] = useState<Record<number, string>>({});
   const [egresados, setEgresados] = useState(false);
 
-  if (!isOpen) return null;
-
-  // Filtrar solo los promovidos (que estén en TRANSICION_PENDIENTE, o inscripciones previas PROMOVIDO)
-  // En alumnosCierre, los que no tienen adecuaciones o los que manualmente marcamos? 
-  // Wait, alumnosCierre trae los alumnos del grupo en ese ciclo.
-  // Vamos a mostrarlos todos y aplicar a los que seleccionen.
-  
   const alumnosElegibles = alumnosCierre?.filter((a: any) => 
     a.estado === 'TRANSICION_PENDIENTE' || a.estado === 'ACTIVO'
   ) || [];
 
+  // Actualizar planes individuales si se cambia el plan por defecto
+  useEffect(() => {
+    if (planPagoId && alumnosElegibles.length > 0) {
+      const init: Record<number, string> = { ...planesSeleccionados };
+      alumnosElegibles.forEach((a: any) => {
+        init[a.alumnoId] = planPagoId;
+      });
+      setPlanesSeleccionados(init);
+    }
+  }, [planPagoId]); // Solo reaccionar a planPagoId para no sobrescribir selecciones manuales
+
+  if (!isOpen) return null;
+
   const handleSubmit = () => {
     if (!cicloIdDestino) return alert('Selecciona el ciclo destino');
     if (!egresados && !grupoIdDestino) return alert('Selecciona el grupo destino (o marca como egresados)');
-    if (!egresados && !planPagoId) return alert('Selecciona el plan de pagos por defecto');
+    
+    if (!egresados) {
+      const faltan = alumnosElegibles.some((a: any) => !planesSeleccionados[a.alumnoId]);
+      if (faltan) return alert('Selecciona un plan de pagos para todos los alumnos (puedes usar el plan por defecto)');
+    }
 
     const promociones = alumnosElegibles.map((a: any) => ({
       alumnoId: a.alumnoId,
       grupoIdDestino: egresados ? null : Number(grupoIdDestino),
       egresado: egresados,
-      planPagoId: egresados ? null : Number(planPagoId)
+      planPagoId: egresados ? null : Number(planesSeleccionados[a.alumnoId])
     }));
 
     reinscribirMutation.mutate({
@@ -66,7 +77,7 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
         <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
           <div>
             <h3 className="text-xl font-bold text-navy-800 flex items-center gap-2">
@@ -74,7 +85,7 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
               Asistente de Reinscripción Masiva
             </h3>
             <p className="text-sm text-gray-500 mt-1">
-              Promueve a los alumnos al siguiente grado y genera su calendario de pagos automáticamente.
+              Promueve a los alumnos al siguiente grado y asigna su plan de pagos individualmente.
             </p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
@@ -82,7 +93,7 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
           <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-xl text-sm text-blue-800 flex gap-3">
             <ArrowRight className="shrink-0 text-blue-600" size={20} />
             <p>
@@ -117,6 +128,7 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
                     if (e.target.checked) {
                       setGrupoIdDestino('');
                       setPlanPagoId('');
+                      setPlanesSeleccionados({});
                     }
                   }}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -128,40 +140,78 @@ export function ReinscripcionMasivaModal({ grupoId, isOpen, onClose, onSuccess }
 
               {!egresados && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Grupo Destino
-                    </label>
-                    <select 
-                      value={grupoIdDestino} 
-                      onChange={e => setGrupoIdDestino(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none"
-                    >
-                      <option value="">Selecciona el grupo al que pasan</option>
-                      {gruposDestino?.filter((g: any) => g.cicloId === Number(cicloIdDestino)).map((g: any) => (
-                        <option key={g.grupoId} value={g.grupoId}>
-                          {g.grado?.nombre} {g.nivel?.nombre} - Grupo {g.nombre}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Grupo Destino
+                      </label>
+                      <select 
+                        value={grupoIdDestino} 
+                        onChange={e => setGrupoIdDestino(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none"
+                      >
+                        <option value="">Selecciona el grupo al que pasan</option>
+                        {gruposDestino?.filter((g: any) => g.cicloId === Number(cicloIdDestino)).map((g: any) => (
+                          <option key={g.grupoId} value={g.grupoId}>
+                            {g.grado?.nombre} {g.nivel?.nombre} - Grupo {g.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Aplicar Plan por Defecto
+                      </label>
+                      <select 
+                        value={planPagoId} 
+                        onChange={e => setPlanPagoId(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none"
+                      >
+                        <option value="">Selecciona un plan general...</option>
+                        {planesPago?.filter((p: any) => p.activo && !p.eliminadoEn).map((p: any) => (
+                          <option key={p.planPagoId} value={p.planPagoId}>
+                            {p.nombre} (Meses: {p.meses})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Plan de Pagos a asignar
-                    </label>
-                    <select 
-                      value={planPagoId} 
-                      onChange={e => setPlanPagoId(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none"
-                    >
-                      <option value="">Selecciona el plan</option>
-                      {planesPago?.filter((p: any) => p.activo && !p.eliminadoEn).map((p: any) => (
-                        <option key={p.planPagoId} value={p.planPagoId}>
-                          {p.nombre} (Meses: {p.meses})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+
+                  {alumnosElegibles.length > 0 && (
+                    <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3">Alumno</th>
+                            <th className="px-4 py-3 w-1/2">Plan de Pago Individual</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 bg-white max-h-60 overflow-y-auto block w-full table-fixed">
+                          {alumnosElegibles.map((a: any) => (
+                            <tr key={a.alumnoId} className="w-full flex">
+                              <td className="px-4 py-3 font-medium text-gray-900 flex-1 truncate self-center">
+                                {a.alumno?.nombre} {a.alumno?.apellidos}
+                              </td>
+                              <td className="px-4 py-2 flex-1">
+                                <select 
+                                  value={planesSeleccionados[a.alumnoId] || ''} 
+                                  onChange={e => setPlanesSeleccionados(prev => ({ ...prev, [a.alumnoId]: e.target.value }))}
+                                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm"
+                                >
+                                  <option value="">Asignar plan...</option>
+                                  {planesPago?.filter((p: any) => p.activo && !p.eliminadoEn).map((p: any) => (
+                                    <option key={p.planPagoId} value={p.planPagoId}>
+                                      {p.nombre} (Meses: {p.meses})
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
