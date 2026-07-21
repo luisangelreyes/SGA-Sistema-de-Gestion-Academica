@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { VincularTutorModal } from '../components/VincularTutorModal';
 import { InscribirAlumnoModal } from '../components/InscribirAlumnoModal';
 import { AsignarPlanPagoModal } from '../components/AsignarPlanPagoModal';
+import { AsignarBecaModal } from '../components/AsignarBecaModal';
 
 export function ExpedienteAlumnoPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,12 +16,11 @@ export function ExpedienteAlumnoPage() {
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
   const [isInscribirModalOpen, setIsInscribirModalOpen] = useState(false);
   const [isAsignarPlanModalOpen, setIsAsignarPlanModalOpen] = useState(false);
+  const [isAsignarBecaModalOpen, setIsAsignarBecaModalOpen] = useState(false);
 
   const alumnoId = parseInt(id || '0', 10);
   
-  const { data: alumno, isLoading, error, isSuccess } = trpc.alumnos.getById.useQuery(alumnoId, {
-    enabled: !!alumnoId,
-  });
+  const { data: alumno, isLoading, error } = trpc.alumnos.getById.useQuery(alumnoId, { enabled: !!alumnoId });
 
   const unlinkTutorMutation = trpc.alumnos.unlinkTutor.useMutation({
     onSuccess: () => {
@@ -36,8 +36,27 @@ export function ExpedienteAlumnoPage() {
 
   const inscripcionActual = useMemo(() => {
     if (!alumno?.inscripciones) return null;
-    return alumno.inscripciones.find(i => i.estadoEnCiclo === 'INSCRITO' && i.ciclo.activo);
+    return alumno.inscripciones.find((i: any) => i.estadoEnCiclo === 'INSCRITO' && i.ciclo.activo);
   }, [alumno]);
+
+  const asignacionesBeca = (alumno as any)?.asignacionesBeca;
+
+  const asignacionActual = useMemo(() => {
+    if (!asignacionesBeca || !inscripcionActual) return null;
+    return asignacionesBeca.find((a: any) => a.cicloId === inscripcionActual.cicloId && a.estado === 'ACTIVA');
+  }, [asignacionesBeca, inscripcionActual]);
+
+  const becaActual = asignacionActual?.beca;
+
+  const revokeBecaMutation = trpc.becas.revokeBeca.useMutation({
+    onSuccess: () => {
+      window.alert('Beca/Promoción retirada con éxito.');
+      utils.alumnos.getById.invalidate(alumnoId);
+    },
+    onError: (err) => {
+      window.alert(err.message || 'Error al retirar la beca.');
+    }
+  });
 
   const quitarPlanMutation = trpc.inscripciones.quitarPlanPago.useMutation({
     onSuccess: () => {
@@ -135,6 +154,7 @@ export function ExpedienteAlumnoPage() {
 
   const formatFecha = (fecha: string | Date) => {
     return new Date(fecha).toLocaleDateString('es-MX', {
+      timeZone: 'UTC',
       day: 'numeric',
       month: 'long',
       year: 'numeric'
@@ -281,6 +301,42 @@ export function ExpedienteAlumnoPage() {
                 Grupo {inscripcionActual.grupo?.nombre || 'Sin grupo'}
                 <span className="text-gray-500 ml-2 font-normal">({inscripcionActual.ciclo.nombre})</span>
               </p>
+
+              {becaActual ? (
+                <div className="mt-3 flex items-center justify-between bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                  <div className="text-sm font-medium text-emerald-800">
+                    Beca/Promoción Activa: {becaActual.nombreBeca} ({becaActual.porcentaje}%)
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('¿Seguro que deseas retirar esta beca/promoción? Si el alumno ya tiene un plan de pagos asignado, deberás quitárselo y volvérselo a asignar para que se recalculen los cobros con la tarifa regular.')) {
+                        revokeBecaMutation.mutate({ 
+                          asignacionId: asignacionActual.asignacionId, 
+                          motivoRetiro: 'Retiro manual desde el expediente' 
+                        });
+                      }
+                    }}
+                    disabled={revokeBecaMutation.isPending}
+                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Retirar Beca/Promoción"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ) : !inscripcionActual.planPago ? (
+                <div className="mt-3 flex items-center justify-between bg-gray-50/50 p-3 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    El alumno no tiene becas ni promociones en este ciclo.
+                  </div>
+                  <button
+                    onClick={() => setIsAsignarBecaModalOpen(true)}
+                    className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-sm shadow-sm"
+                  >
+                    Asignar Beca
+                  </button>
+                </div>
+              ) : null}
+
               {inscripcionActual.planPago ? (
                 <div className="mt-3 flex items-center justify-between bg-blue-50/50 p-3 rounded-lg border border-blue-100">
                   <div className="text-sm font-medium text-blue-800">
@@ -340,73 +396,83 @@ export function ExpedienteAlumnoPage() {
             <Calculator size={20} />
             <h2>Calendario de Pagos</h2>
           </div>
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Mes</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Concepto</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Vencimiento</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Monto</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Referencia</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Comprobante</th>
-                    <th className="px-6 py-3 font-semibold text-gray-700">Estado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {alumno.calendariosPagos.map((pago: any) => (
-                    <tr key={pago.calendarioPagoId} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-3 font-medium text-gray-900">{pago.mes || '-'}</td>
-                      <td className="px-6 py-3 text-gray-600">{pago.concepto}</td>
-                      <td className="px-6 py-3 text-gray-600">
-                        {formatFecha(pago.fechaVencimiento)}
-                      </td>
-                      <td className="px-6 py-3 font-semibold text-gray-900">
-                        ${Number(pago.montoOriginal).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-3 text-gray-600">
-                        {pago.aplicacionesPago?.[0]?.pago?.observaciones || '-'}
-                      </td>
-                      <td className="px-6 py-3">
-                        {pago.aplicacionesPago?.[0]?.pago && (
-                          pago.aplicacionesPago[0].pago.documentos && pago.aplicacionesPago[0].pago.documentos.length > 0 ? (
-                            <button 
-                              onClick={() => handleVerComprobante(pago.aplicacionesPago[0].pago.pagoId)}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                              title="Ver Comprobante"
-                            >
-                              <Eye size={16} /> Ver
-                            </button>
-                          ) : (
-                            <label className="inline-flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors text-sm font-medium" title="Adjuntar comprobante a este pago">
-                              <UploadCloud size={16} /> Adjuntar
-                              <input 
-                                type="file" 
-                                className="hidden" 
-                                accept="image/*,.pdf"
-                                onChange={(e) => handleAdjuntar(pago.aplicacionesPago[0].pago.pagoId, e)}
-                              />
-                            </label>
-                          )
-                        )}
-                        {!pago.aplicacionesPago?.[0]?.pago && <span className="text-gray-400">-</span>}
-                      </td>
-                      <td className="px-6 py-3">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          pago.estadoCobro === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                          pago.estadoCobro === 'VENCIDO' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {pago.estadoCobro}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {Array.from(new Set(alumno.calendariosPagos.map((p: any) => p.cicloId))).map((cicloId: any) => {
+            const pagosCiclo = alumno.calendariosPagos.filter((p: any) => p.cicloId === cicloId);
+            const nombreCiclo = pagosCiclo[0]?.ciclo?.nombre || `Ciclo ${cicloId}`;
+            
+            return (
+              <div key={cicloId} className="mb-6 last:mb-0">
+                <h3 className="text-sm font-medium text-gray-500 mb-2 px-1">Ciclo Escolar: <span className="font-semibold text-gray-700">{nombreCiclo}</span></h3>
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Mes</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Concepto</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Vencimiento</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Monto</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Referencia</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Comprobante</th>
+                          <th className="px-6 py-3 font-semibold text-gray-700">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {pagosCiclo.map((pago: any) => (
+                          <tr key={pago.calendarioPagoId} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-3 font-medium text-gray-900">{pago.mes || '-'}</td>
+                            <td className="px-6 py-3 text-gray-600">{pago.concepto}</td>
+                            <td className="px-6 py-3 text-gray-600">
+                              {formatFecha(pago.fechaVencimiento)}
+                            </td>
+                            <td className="px-6 py-3 font-semibold text-gray-900">
+                              ${Number(pago.montoOriginal).toFixed(2)}
+                            </td>
+                            <td className="px-6 py-3 text-gray-600">
+                              {pago.aplicacionesPago?.[0]?.pago?.observaciones || '-'}
+                            </td>
+                            <td className="px-6 py-3">
+                              {pago.aplicacionesPago?.[0]?.pago && (
+                                pago.aplicacionesPago[0].pago.documentos && pago.aplicacionesPago[0].pago.documentos.length > 0 ? (
+                                  <button 
+                                    onClick={() => handleVerComprobante(pago.aplicacionesPago[0].pago.pagoId)}
+                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                                    title="Ver Comprobante"
+                                  >
+                                    <Eye size={16} /> Ver
+                                  </button>
+                                ) : (
+                                  <label className="inline-flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-600 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 hover:text-blue-600 transition-colors text-sm font-medium" title="Adjuntar comprobante a este pago">
+                                    <UploadCloud size={16} /> Adjuntar
+                                    <input 
+                                      type="file" 
+                                      className="hidden" 
+                                      accept="image/*,.pdf"
+                                      onChange={(e) => handleAdjuntar(pago.aplicacionesPago[0].pago.pagoId, e)}
+                                    />
+                                  </label>
+                                )
+                              )}
+                              {!pago.aplicacionesPago?.[0]?.pago && <span className="text-gray-400">-</span>}
+                            </td>
+                            <td className="px-6 py-3">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                pago.estadoCobro === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                pago.estadoCobro === 'VENCIDO' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {pago.estadoCobro}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -440,6 +506,15 @@ export function ExpedienteAlumnoPage() {
           alumnoId={alumnoId}
           inscripcionId={inscripcionActual.inscripcionId}
           onClose={() => setIsAsignarPlanModalOpen(false)}
+        />
+      )}
+
+      {isAsignarBecaModalOpen && inscripcionActual && (
+        <AsignarBecaModal
+          isOpen={isAsignarBecaModalOpen}
+          alumnoId={alumnoId}
+          cicloId={inscripcionActual.cicloId}
+          onClose={() => setIsAsignarBecaModalOpen(false)}
         />
       )}
     </div>

@@ -34,11 +34,16 @@ export class InscripcionesService {
   }
 
   static async createVentana(input: CreateVentanaInscripcionInput) {
+    // Ya no creamos beca automática falsa, usamos becaId si se pasa, y guardamos el descuento
     return InscripcionesRepository.createVentana({
-      ...input,
+      cicloId: input.cicloId,
+      nivelId: input.nivelId,
+      becaId: input.becaId ?? null,
+      descuentoInscripcion: input.descuentoInscripcion,
       fechaInicio: new Date(input.fechaInicio),
-      fechaFin: new Date(input.fechaFin)
-    });
+      fechaFin: new Date(input.fechaFin),
+      activa: input.activa
+    } as any);
   }
 
   static async updateVentana(input: UpdateVentanaInscripcionInput) {
@@ -61,12 +66,12 @@ export class InscripcionesService {
   }
 
   static async createInscripcion(input: CreateInscripcionInput) {
-    const existente = await InscripcionesRepository.findInscripcionUnique(input.alumnoId, input.cicloId);
+    const existente = await InscripcionesRepository.findInscripcionExistente(input.alumnoId, input.cicloId, input.gradoId);
 
-    if (existente && !existente.eliminadoEn) {
+    if (existente) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: 'El alumno ya se encuentra inscrito en este ciclo escolar.'
+        message: 'El alumno ya se encuentra inscrito en este ciclo escolar para este grado.'
       });
     }
 
@@ -138,6 +143,43 @@ export class InscripcionesService {
         }
       });
       
+      // 3. Verificar si aplica Promoción / Ventana de Inscripción Temprana
+      const alumnoRef = await tx.alumno.findUnique({ where: { alumnoId: input.alumnoId } });
+      const nivelIdAlumno = alumnoRef?.nivelId;
+
+      const hoy = new Date();
+      const ventanaPromocional = await tx.ventanaInscripcionTemprana.findFirst({
+        where: {
+          cicloId: input.cicloId,
+          nivelId: nivelIdAlumno, // Validar que sea del mismo nivel
+          OR: [
+            { gradoId: input.gradoId },
+            { gradoId: null }
+          ],
+          activa: true,
+          eliminadoEn: null,
+          fechaInicio: { lte: hoy },
+          fechaFin: { gte: hoy }
+        },
+        orderBy: {
+          gradoId: 'desc' // Preferimos la específica del grado sobre la general
+        }
+      });
+
+      if (ventanaPromocional && ventanaPromocional.becaId) {
+        // Asignarle la beca automáticamente
+        await tx.asignacionBeca.create({
+          data: {
+            alumnoId: input.alumnoId,
+            becaId: ventanaPromocional.becaId,
+            cicloId: input.cicloId,
+            estado: 'ACTIVA',
+            fechaAsignacion: new Date(),
+            asignadaPor: 1 // Por defecto sistema o un super usuario (O idealmente el userId en contexto si lo tuvieramos)
+          }
+        });
+      }
+      
       return inscripcion;
     });
   }
@@ -161,7 +203,7 @@ export class InscripcionesService {
   static async asignarPlanPago(input: AsignarPlanPagoInput) {
     const inscripcion = await prisma.inscripcionCiclo.findUnique({
       where: { inscripcionId: input.inscripcionId },
-      include: { alumno: true }
+      include: { alumno: true, ciclo: true }
     });
 
     if (!inscripcion || inscripcion.eliminadoEn) {
@@ -187,23 +229,61 @@ export class InscripcionesService {
         }
       });
 
-      // 1.5 Buscar la Tarifa
-      const tarifa = await tx.tarifa.findFirst({
+      // 1.5 Buscar todas las Tarifas relevantes
+      const tarifasDb = await tx.tarifa.findMany({
         where: {
           cicloId: inscripcion.cicloId,
           nivelId: inscripcion.alumno.nivelId,
-          concepto: 'COLEGIATURA',
+          concepto: { in: ['COLEGIATURA', 'INSCRIPCIÓN', 'INSCRIPCION', 'ARANCEL', 'MATERIAL ANUAL', 'MATERIAL'] },
           activa: true,
           eliminadoEn: null
         }
       });
 
-      const tarifaMensualBase = tarifa ? Number(tarifa.monto) : 0;
+      const tarifas = {
+        colegiatura: Number(tarifasDb.find(t => t.concepto === 'COLEGIATURA')?.monto ?? 0),
+        inscripcion: Number(tarifasDb.find(t => t.concepto === 'INSCRIPCIÓN' || t.concepto === 'INSCRIPCION')?.monto ?? 0),
+        arancel: Number(tarifasDb.find(t => t.concepto === 'ARANCEL')?.monto ?? 0),
+        materialAnual: Number(tarifasDb.find(t => t.concepto === 'MATERIAL ANUAL' || t.concepto === 'MATERIAL')?.monto ?? 0),
+      };
+
+      // 1.6 Buscar si la inscripción cayó en una Ventana Temprana para descuento de inscripción
+      const ventana = await tx.ventanaInscripcionTemprana.findFirst({
+        where: {
+          cicloId: inscripcion.cicloId,
+          nivelId: inscripcion.alumno.nivelId,
+          OR: [
+            { gradoId: inscripcion.gradoId },
+            { gradoId: null }
+          ],
+          activa: true,
+          eliminadoEn: null,
+          fechaInicio: { lte: inscripcion.fechaIngreso },
+          fechaFin: { gte: inscripcion.fechaIngreso }
+        },
+        orderBy: {
+          gradoId: 'desc'
+        }
+      });
+      const descuentoInscripcion = ventana ? Number(ventana.descuentoInscripcion) : 0;
+
+      // 1.8 Buscar si tiene Beca asignada
+      const asignacionBeca = await tx.asignacionBeca.findFirst({
+        where: {
+          alumnoId: inscripcion.alumnoId,
+          cicloId: inscripcion.cicloId,
+          estado: 'ACTIVA',
+          eliminadoEn: null
+        },
+        include: { beca: true }
+      });
+
+      const becaData = asignacionBeca ? { porcentajeDescuento: Number(asignacionBeca.beca.porcentaje) } : null;
 
       // 2. Generar Adeudos usando CalculadoraPagos
       const planBase = { meses: planPago.meses };
       
-      const adeudosCalculados = CalculadoraPagos.generarCalendario(planBase, tarifaMensualBase, new Date(inscripcion.fechaIngreso));
+      const adeudosCalculados = CalculadoraPagos.generarCalendario(planBase, tarifas, new Date(inscripcion.fechaIngreso), becaData, descuentoInscripcion, new Date(inscripcion.ciclo.fechaInicio));
       
       const adeudosParaInsertar = adeudosCalculados.map(a => ({
         alumnoId: inscripcion.alumnoId,

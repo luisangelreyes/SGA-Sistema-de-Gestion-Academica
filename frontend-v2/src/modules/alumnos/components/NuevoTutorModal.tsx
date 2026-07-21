@@ -12,7 +12,7 @@ const formSchema = z.object({
   rfc: z.string().optional(),
   curp: z.string().max(18).optional(),
   direccion: z.string().optional(),
-  requiereFactura: z.boolean().default(false),
+  requiereFactura: z.boolean(),
 
   // Datos fiscales
   razonSocial: z.string().optional(),

@@ -30,7 +30,8 @@ export const createCicloEscolarSchema = z.object({
   fechaFin: z.string().datetime({ message: 'Formato de fecha inválido' }),
   activo: z.boolean().optional(),
   periodicidad: z.enum(['ANUAL', 'SEMESTRAL']).optional(),
-  gradosPermitidos: z.record(z.array(z.number().int().positive())).optional()
+  gradosPermitidos: z.record(z.array(z.number().int().positive())).optional(),
+  clonarDesdeCicloId: z.number().int().positive().optional()
 });
 
 export const updateCicloEscolarSchema = createCicloEscolarSchema.partial().extend({
@@ -119,3 +120,14 @@ export type GetAlumnosCierreGrupoInput = z.infer<typeof getAlumnosCierreGrupoSch
 export type CerrarCicloGrupoInput = z.infer<typeof cerrarCicloGrupoSchema>;
 export type GetGradosParaInicializarInput = z.infer<typeof getGradosParaInicializarSchema>;
 export type InicializarGruposSeleccionadosInput = z.infer<typeof inicializarGruposSeleccionadosSchema>;
+
+export const reinscripcionMasivaGrupoSchema = z.object({
+  cicloIdDestino: z.number().int().positive(),
+  promociones: z.array(z.object({
+    alumnoId: z.number().int().positive(),
+    grupoIdDestino: z.number().int().positive().nullable(), // nullable si egresan
+    egresado: z.boolean().default(false),
+    planPagoId: z.number().int().positive().nullable() // conservar o nuevo
+  }))
+});
+export type ReinscripcionMasivaGrupoInput = z.infer<typeof reinscripcionMasivaGrupoSchema>;

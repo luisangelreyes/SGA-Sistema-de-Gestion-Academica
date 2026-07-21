@@ -11,7 +11,7 @@ const editarTutorSchema = z.object({
   telefono: z.string().max(15).optional(),
   direccion: z.string().optional(),
   curp: z.string().max(18).optional().or(z.literal('')),
-  requiereFactura: z.boolean().default(false),
+  requiereFactura: z.boolean(),
   
   rfc: z.string().max(13).optional().or(z.literal('')),
   razonSocial: z.string().max(120).optional().or(z.literal('')),

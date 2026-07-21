@@ -153,6 +153,7 @@ model NivelEducativo {
   grados        Grado[]
   grupos        Grupo[]
   tarifas       Tarifa[]
+  ventanasInscripcion VentanaInscripcionTemprana[]
 
   @@map("nivel_educativo")
 }
@@ -170,6 +171,7 @@ model Grado {
   grupos        Grupo[]
   inscripciones InscripcionCiclo[]
   materias      Materia[]
+  ventanasInscripcion VentanaInscripcionTemprana[]
 
   @@map("grado")
 }
@@ -394,7 +396,7 @@ model InscripcionCiclo {
   grupo            Grupo?       @relation(fields: [grupoId], references: [grupoId], onDelete: NoAction)
   planPago         PlanPago?    @relation(fields: [planPagoId], references: [planPagoId])
 
-  @@unique([alumnoId, cicloId])
+  @@unique([alumnoId, cicloId, gradoId])
   @@map("inscripcion_ciclo")
 }
 
@@ -564,17 +566,22 @@ model AsignacionBeca {
 }
 
 model VentanaInscripcionTemprana {
-  ventanaId     Int          @id @default(autoincrement()) @map("ventana_id")
-  cicloId       Int          @map("ciclo_id")
-  fechaInicio   DateTime     @map("fecha_inicio") @db.Date
-  fechaFin      DateTime     @map("fecha_fin") @db.Date
-  becaId        Int          @map("beca_id")
-  activa        Boolean?     @default(true)
-  creadoEn      DateTime?    @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn DateTime?    @default(now()) @map("actualizado_en") @db.Timestamptz(6)
-  eliminadoEn   DateTime?    @map("eliminado_en") @db.Timestamptz(6)
-  beca          Beca         @relation(fields: [becaId], references: [becaId])
-  ciclo         CicloEscolar @relation(fields: [cicloId], references: [cicloId])
+  ventanaId            Int          @id @default(autoincrement()) @map("ventana_id")
+  cicloId              Int          @map("ciclo_id")
+  fechaInicio          DateTime     @map("fecha_inicio") @db.Date
+  fechaFin             DateTime     @map("fecha_fin") @db.Date
+  descuentoInscripcion Decimal      @default(0) @map("descuento_inscripcion") @db.Decimal(5, 2)
+  becaId               Int?         @map("beca_id")
+  nivelId              Int          @map("nivel_id")
+  gradoId              Int?         @map("grado_id")
+  activa               Boolean?     @default(true)
+  creadoEn             DateTime?    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn        DateTime?    @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  eliminadoEn          DateTime?    @map("eliminado_en") @db.Timestamptz(6)
+  beca                 Beca?        @relation(fields: [becaId], references: [becaId])
+  ciclo                CicloEscolar @relation(fields: [cicloId], references: [cicloId])
+  nivel                NivelEducativo @relation(fields: [nivelId], references: [nivelId])
+  grado                Grado?       @relation(fields: [gradoId], references: [gradoId])
 
   @@map("ventana_inscripcion_temprana")
 }

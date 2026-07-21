@@ -31,7 +31,7 @@ export class InscripcionesRepository {
   static async getVentanas() {
     return prisma.ventanaInscripcionTemprana.findMany({
       where: { eliminadoEn: null },
-      include: { ciclo: true, beca: true },
+      include: { ciclo: true, beca: true, nivel: true },
       orderBy: { fechaInicio: 'desc' }
     });
   }
@@ -70,13 +70,13 @@ export class InscripcionesRepository {
     });
   }
 
-  static async findInscripcionUnique(alumnoId: number, cicloId: number) {
-    return prisma.inscripcionCiclo.findUnique({
+  static async findInscripcionExistente(alumnoId: number, cicloId: number, gradoId?: number | null) {
+    return prisma.inscripcionCiclo.findFirst({
       where: {
-        alumnoId_cicloId: {
-          alumnoId,
-          cicloId
-        }
+        alumnoId,
+        cicloId,
+        gradoId: gradoId ?? null,
+        eliminadoEn: null
       }
     });
   }

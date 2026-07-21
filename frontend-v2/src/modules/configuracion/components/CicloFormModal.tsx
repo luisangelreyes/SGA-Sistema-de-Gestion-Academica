@@ -20,7 +20,10 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
   const [fechaFin, setFechaFin] = useState('');
   const [activo, setActivo] = useState(false);
   const [periodicidad, setPeriodicidad] = useState<'ANUAL' | 'SEMESTRAL'>('ANUAL');
+  const [clonarDesdeCicloId, setClonarDesdeCicloId] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
+
+  const { data: ciclos } = trpc.grupos.getCiclos.useQuery();
 
   useEffect(() => {
     if (isOpen) {
@@ -31,12 +34,14 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
         setFechaFin(initialData.fechaFin);
         setActivo(!!initialData.activo);
         setPeriodicidad(initialData.periodicidad || 'ANUAL');
+        setClonarDesdeCicloId('');
       } else {
         setNombre('');
         setFechaInicio('');
         setFechaFin('');
         setActivo(false);
         setPeriodicidad('ANUAL');
+        setClonarDesdeCicloId('');
       }
     }
   }, [isOpen, initialData]);
@@ -75,7 +80,7 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
     const startISO = new Date(fechaInicio).toISOString();
     const endISO = new Date(fechaFin).toISOString();
 
-    const payload = {
+    const payload: any = {
       nombre,
       fechaInicio: startISO,
       fechaFin: endISO,
@@ -86,6 +91,9 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
     if (isEditing) {
       updateMutation.mutate({ cicloId: cicloId!, ...payload });
     } else {
+      if (clonarDesdeCicloId) {
+        payload.clonarDesdeCicloId = Number(clonarDesdeCicloId);
+      }
       createMutation.mutate(payload);
     }
   };
@@ -106,31 +114,14 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Nombre del Ciclo Escolar"
-            placeholder="Ej. 2025-2026"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            disabled={isSaving}
-            required
-          />
-
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Periodicidad
-            </label>
-            <select
-              value={periodicidad}
-              onChange={(e) => setPeriodicidad(e.target.value as 'ANUAL' | 'SEMESTRAL')}
-              disabled={isSaving}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-navy-500 outline-none text-sm bg-white h-[38px] sm:text-sm"
-            >
-              <option value="ANUAL">Anual</option>
-              <option value="SEMESTRAL">Semestral</option>
-            </select>
-          </div>
-        </div>
+        <Input
+          label="Nombre del Ciclo Escolar"
+          placeholder="Ej. 2025-2026"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          disabled={isSaving}
+          required
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -150,6 +141,23 @@ export function CicloFormModal({ isOpen, onClose, cicloId, initialData }: Props)
             required
           />
         </div>
+
+        {!isEditing && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-gray-700">Clonar grupos y grados desde (Opcional)</label>
+            <select
+              value={clonarDesdeCicloId}
+              onChange={(e) => setClonarDesdeCicloId(e.target.value ? Number(e.target.value) : '')}
+              disabled={isSaving}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm w-full"
+            >
+              <option value="">-- No clonar, crear ciclo vacío --</option>
+              {ciclos?.map((c: any) => (
+                <option key={c.cicloId} value={c.cicloId}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-gray-100">
           <input

@@ -25,7 +25,7 @@ export function CajaPage() {
 
   // Filtrar en memoria por simplicidad para la UI rápida
   const alumnosFiltrados = searchTerm.length > 2
-    ? alumnos.filter(a =>
+    ? alumnos.filter((a: any) =>
       a.nombreCompleto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.matricula?.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -93,7 +93,7 @@ export function CajaPage() {
     refetchAdeudos(); // Recargar el estado de cuenta
   };
 
-  const alumnoSeleccionado = alumnos.find(a => a.alumnoId === selectedAlumnoId);
+  const alumnoSeleccionado = alumnos.find((a: any) => a.alumnoId === selectedAlumnoId);
 
   return (
     <div className="h-full flex flex-col p-6 max-w-7xl mx-auto w-full gap-6">
@@ -122,7 +122,7 @@ export function CajaPage() {
               ) : alumnosFiltrados.length === 0 ? (
                 <div className="p-4 text-center text-slate-500">No se encontraron alumnos</div>
               ) : (
-                alumnosFiltrados.map(alumno => (
+                alumnosFiltrados.map((alumno: any) => (
                   <button
                     key={alumno.alumnoId}
                     onClick={() => handleSelectAlumno(alumno.alumnoId, alumno.tutoresAlumnos?.[0]?.tutorId)}
@@ -225,7 +225,7 @@ export function CajaPage() {
                             {isVencido && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-md">Vencido</span>}
                           </div>
                           <div className="text-sm text-slate-500 mt-1">
-                            Vence: {new Date(adeudo.fechaVencimiento).toLocaleDateString()}
+                            Vence: {new Date(adeudo.fechaVencimiento).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
                           </div>
                         </div>
 

@@ -111,7 +111,30 @@ export class AlumnosService {
       updateData.grado = { connect: { gradoId } };
     }
 
-    return AlumnosRepository.updateAlumno(alumnoId, updateData);
+    const updatedAlumno = await AlumnosRepository.updateAlumno(alumnoId, updateData);
+
+    // Actualizar la inscripción activa del alumno si se envió grado o grupo
+    if (gradoId !== undefined || grupoId !== undefined) {
+      const inscripcionActiva = await prisma.inscripcionCiclo.findFirst({
+        where: {
+          alumnoId,
+          eliminadoEn: null,
+          ciclo: { activo: true }
+        }
+      });
+
+      if (inscripcionActiva) {
+        await prisma.inscripcionCiclo.update({
+          where: { inscripcionId: inscripcionActiva.inscripcionId },
+          data: {
+            ...(gradoId !== undefined && { gradoId }),
+            ...(grupoId !== undefined && { grupoId })
+          }
+        });
+      }
+    }
+
+    return updatedAlumno;
   }
 
   /**

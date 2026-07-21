@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LayoutDashboard, Users, UserSquare2, CreditCard, LogOut, Settings, BookOpen, Layers, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, UserSquare2, CreditCard, LogOut, Settings, BookOpen, Layers, Shield, ClipboardList, GraduationCap, Award } from 'lucide-react';
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
@@ -24,6 +24,9 @@ export function Sidebar() {
     { to: '/grupos', icon: Layers, label: 'Grupos', modulo: 'Grupos' },
     { to: '/materias', icon: BookOpen, label: 'Materias', modulo: 'Materias' },
     { to: '/pagos', icon: CreditCard, label: 'Pagos', modulo: 'Pagos' },
+    { to: '/becas', icon: Award, label: 'Becas', modulo: 'Configuracion' },
+    { to: '/calificaciones', icon: GraduationCap, label: 'Calificaciones', modulo: 'Calificaciones' },
+    { to: '/boletas', icon: ClipboardList, label: 'Boletas', modulo: 'Calificaciones' },
   ];
 
   const visibleNavItems = navItems.filter(item => item.modulo === null || hasPermiso(item.modulo));

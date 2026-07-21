@@ -56,7 +56,7 @@ describe('InscripcionesService (Unit)', () => {
     it('createVentana debería transformar strings a Date y crear la ventana', async () => {
       prismaMock.ventanaInscripcionTemprana.create.mockResolvedValue({ ventanaId: 1 } as any);
       await InscripcionesService.createVentana({
-        cicloId: 1, becaId: 1, fechaInicio: '2023-01-01', fechaFin: '2023-02-01', activa: true
+        cicloId: 1, nivelId: 1, descuentoInscripcion: 50, fechaInicio: '2023-01-01', fechaFin: '2023-02-01', activa: true
       });
       expect(prismaMock.ventanaInscripcionTemprana.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
@@ -98,24 +98,17 @@ describe('InscripcionesService (Unit)', () => {
     });
 
     it('createInscripcion debería rechazar si el alumno ya está inscrito en el ciclo', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue({ inscripcionId: 1 } as any);
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue({ inscripcionId: 1 } as any);
       
       await expect(InscripcionesService.createInscripcion({
         alumnoId: 1, cicloId: 1, fechaIngreso: '2023-08-01', esIngresoTardio: false, estadoEnCiclo: 'ACTIVO', estadoFinanciero: 'AL_CORRIENTE'
-      })).rejects.toThrowError(new TRPCError({ code: 'BAD_REQUEST', message: 'El alumno ya se encuentra inscrito en este ciclo escolar.' }));
+      })).rejects.toThrowError(new TRPCError({ code: 'BAD_REQUEST', message: 'El alumno ya se encuentra inscrito en este ciclo escolar para este grado.' }));
     });
 
-    it('createInscripcion debería crear la inscripción si no existe duplicado y generar adeudos (10 meses)', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue(null);
+    it('createInscripcion debería crear la inscripción si no existe duplicado', async () => {
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue(null);
       prismaMock.calificacion.findFirst.mockResolvedValue(null);
-      prismaMock.planPago.findUnique.mockResolvedValue({
-        planPagoId: 1,
-        meses: 10,
-        montoMensual: 1500,
-        eliminadoEn: null
-      } as any);
       prismaMock.inscripcionCiclo.create.mockResolvedValue({ inscripcionId: 5 } as any);
-      prismaMock.calendarioPago.createMany.mockResolvedValue({ count: 10 } as any);
 
       const result = await InscripcionesService.createInscripcion({
         alumnoId: 1, cicloId: 1, fechaIngreso: '2023-08-01', esIngresoTardio: false, estadoEnCiclo: 'ACTIVO', estadoFinanciero: 'AL_CORRIENTE'
@@ -125,17 +118,10 @@ describe('InscripcionesService (Unit)', () => {
       expect(prismaMock.inscripcionCiclo.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ fechaIngreso: expect.any(Date) })
       }));
-      expect(prismaMock.calendarioPago.createMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({ concepto: 'Colegiatura Septiembre', montoOriginal: 1500 })
-          ])
-        })
-      );
     });
 
     it('createInscripcion debería rechazar si el grupo seleccionado no existe', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue(null);
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue(null);
       prismaMock.calificacion.findFirst.mockResolvedValue(null);
       prismaMock.grupo.findUnique.mockResolvedValue(null);
 
@@ -145,7 +131,7 @@ describe('InscripcionesService (Unit)', () => {
     });
 
     it('createInscripcion debería rechazar si el grupo seleccionado no tiene cupo', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue(null);
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue(null);
       prismaMock.calificacion.findFirst.mockResolvedValue(null);
       prismaMock.grupo.findUnique.mockResolvedValue({
         grupoId: 2,
@@ -161,7 +147,7 @@ describe('InscripcionesService (Unit)', () => {
     });
 
     it('createInscripcion debería rechazar si el alumno tiene materias reprobadas (Gap 3)', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue(null);
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue(null);
       prismaMock.calificacion.findFirst.mockResolvedValue({ calificacionId: 1, valorNumerico: 5.5 } as any);
 
       await expect(InscripcionesService.createInscripcion({
@@ -169,31 +155,16 @@ describe('InscripcionesService (Unit)', () => {
       })).rejects.toThrowError(new TRPCError({ code: 'FORBIDDEN', message: 'El alumno tiene materias reprobadas y no puede ser inscrito.' }));
     });
 
-    it('createInscripcion debería generar adeudos correctamente para plan de 12 meses (Gap 2)', async () => {
-      prismaMock.inscripcionCiclo.findUnique.mockResolvedValue(null);
+    it('createInscripcion no debe fallar si no hay ventanas de inscripción temprana (Gap 2)', async () => {
+      prismaMock.inscripcionCiclo.findFirst.mockResolvedValue(null);
       prismaMock.calificacion.findFirst.mockResolvedValue(null);
-      prismaMock.planPago.findUnique.mockResolvedValue({
-        planPagoId: 1,
-        meses: 12,
-        montoMensual: 2000,
-        montoDiciembre: 4000,
-        eliminadoEn: null
-      } as any);
       prismaMock.inscripcionCiclo.create.mockResolvedValue({ inscripcionId: 6 } as any);
-      prismaMock.calendarioPago.createMany.mockResolvedValue({ count: 12 } as any);
 
       await InscripcionesService.createInscripcion({
         alumnoId: 1, cicloId: 1, fechaIngreso: '2023-08-01', esIngresoTardio: false, estadoEnCiclo: 'ACTIVO', estadoFinanciero: 'AL_CORRIENTE'
       });
 
-      expect(prismaMock.calendarioPago.createMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({ concepto: 'Colegiatura Diciembre', montoOriginal: 4000 }),
-            expect.objectContaining({ concepto: 'Colegiatura Julio', montoOriginal: 0 })
-          ])
-        })
-      );
+      expect(prismaMock.inscripcionCiclo.create).toHaveBeenCalled();
     });
 
     it('updateInscripcion debería rechazar si la inscripción no existe', async () => {

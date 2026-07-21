@@ -71,12 +71,11 @@ export function MateriasListPage() {
   };
 
   // --- Procesamiento de Filtros ---
-  const cicloAnualActivo = ciclos?.find(c => c.activo && c.periodicidad === 'ANUAL');
-  const cicloSemestralActivo = ciclos?.find(c => c.activo && c.periodicidad === 'SEMESTRAL');
-  const activeCycleIds = [cicloAnualActivo?.cicloId, cicloSemestralActivo?.cicloId].filter(Boolean);
+  const cicloActivo = ciclos?.find(c => c.activo);
+  const cicloActivoId = cicloActivo?.cicloId;
 
   // Filtrar grupos para mostrar sólo los pertenecientes a ciclos activos
-  const activeGrupos = grupos?.filter(g => activeCycleIds.includes(g.cicloId)) || [];
+  const activeGrupos = grupos?.filter(g => g.cicloId === cicloActivoId) || [];
 
   // Obtener los grupos asignados a una materia (ya sea de forma explícita o heredada del grado/ciclo activo)
   const getGruposAsignados = (m: any) => {
@@ -84,9 +83,8 @@ export function MateriasListPage() {
       return m.gruposMaterias.map((gm: any) => gm.grupo).filter(Boolean);
     }
     if (!m.gradoId) return [];
-    const cycleId = m.grado?.nivel?.codigo === 'BAC' ? cicloSemestralActivo?.cicloId : cicloAnualActivo?.cicloId;
-    if (!cycleId) return [];
-    return activeGrupos.filter(g => g.gradoId === m.gradoId && g.cicloId === cycleId);
+    if (!cicloActivoId) return [];
+    return activeGrupos.filter(g => g.gradoId === m.gradoId && g.cicloId === cicloActivoId);
   };
 
   // Obtener letras (nombres) de grupo únicas para el grado seleccionado (ej. "A", "B")

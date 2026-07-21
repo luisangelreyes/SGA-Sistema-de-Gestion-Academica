@@ -61,19 +61,37 @@ export class GruposRepository {
     });
   }
 
-  static async createCiclo(data: Prisma.CicloEscolarUncheckedCreateInput) {
-    if (data.activo) {
-      const periodicidad = data.periodicidad || 'ANUAL';
-      const [_, newCiclo] = await prisma.$transaction([
-        prisma.cicloEscolar.updateMany({
+  static async createCiclo(data: Prisma.CicloEscolarUncheckedCreateInput, clonarDesdeCicloId?: number) {
+    return prisma.$transaction(async (tx) => {
+      if (data.activo) {
+        const periodicidad = data.periodicidad || 'ANUAL';
+        await tx.cicloEscolar.updateMany({
           where: { activo: true, periodicidad, eliminadoEn: null } as any,
           data: { activo: false, actualizadoEn: new Date() }
-        }),
-        prisma.cicloEscolar.create({ data })
-      ]);
+        });
+      }
+      
+      const newCiclo = await tx.cicloEscolar.create({ data });
+
+      if (clonarDesdeCicloId) {
+        const gruposAntiguos = await tx.grupo.findMany({
+          where: { cicloId: clonarDesdeCicloId, eliminadoEn: null }
+        });
+
+        if (gruposAntiguos.length > 0) {
+          const newGrupos = gruposAntiguos.map(g => ({
+            nivelId: g.nivelId,
+            cicloId: newCiclo.cicloId,
+            nombre: g.nombre,
+            cupoMaximo: g.cupoMaximo,
+            gradoId: g.gradoId
+          }));
+          await tx.grupo.createMany({ data: newGrupos });
+        }
+      }
+
       return newCiclo;
-    }
-    return prisma.cicloEscolar.create({ data });
+    });
   }
 
   static async updateCicloActivo(cicloId: number, data: Prisma.CicloEscolarUncheckedUpdateInput) {

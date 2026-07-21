@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { type LoginInput } from './auth.schema';
 import { AuthRepository } from './auth.repository';
+import { prisma } from '@sga/data-access';
+import { getDefaultPermissions } from '../usuarios/usuarios.defaults';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
@@ -50,6 +52,29 @@ export class AuthService {
     // Resetear intentos fallidos y actualizar último acceso
     await AuthRepository.resetUsuarioIntentos(usuario.usuarioId);
     await this.registrarIntentoLogin(usuario.usuarioId, input.identificador, true, ip, userAgent);
+
+    // Sincronizar permisos faltantes (ej. si se añadieron nuevos módulos)
+    const rolesNombres = usuario.roles.map(r => r.rol.nombre);
+    const permisosPorDefecto = getDefaultPermissions(rolesNombres);
+    
+    for (const pd of permisosPorDefecto) {
+      if (!usuario.permisosModulos.some(pm => pm.modulo === pd.modulo)) {
+        await prisma.usuarioPermisoModulo.create({
+          data: {
+            usuarioId: usuario.usuarioId,
+            modulo: pd.modulo,
+            nivel: pd.nivel
+          }
+        });
+        usuario.permisosModulos.push({
+           usuarioId: usuario.usuarioId,
+           modulo: pd.modulo,
+           nivel: pd.nivel,
+           asignadoPor: null,
+           asignadoEn: new Date()
+        } as any);
+      }
+    }
 
     // Generar token JWT
     const jti = crypto.randomUUID();

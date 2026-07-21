@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { trpc } from '../../../lib/trpc';
 import { 
   Plus, Edit2, Trash2, Calendar, DollarSign, RefreshCw, 
-  AlertTriangle, Check, Info, CheckCircle 
+  AlertTriangle, Check, Users 
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { CicloFormModal } from '../components/CicloFormModal';
+import { ReinscripcionMasivaModal } from '../components/ReinscripcionMasivaModal';
+import { ConfiguracionPromocionesTab } from '../components/ConfiguracionPromocionesTab';
 
-type TabType = 'ciclos' | 'tarifas' | 'cierre';
+type TabType = 'ciclos' | 'tarifas' | 'promociones' | 'cierre';
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<TabType>('ciclos');
@@ -60,49 +62,25 @@ export function ConfiguracionPage() {
   const [guardandoTarifas, setGuardandoTarifas] = useState(false);
   const [tarifaSuccess, setTarifaSuccess] = useState(false);
   const [editandoTarifas, setEditandoTarifas] = useState(false);
-
-  // --- Tarifas de Cobro (SEMESTRAL) ---
-  const [selectedCicloSemId, setSelectedCicloSemId] = useState<number | undefined>(undefined);
-
-  const { data: tarifasSem, isLoading: loadingTarifasSem } = trpc.pagos.getTarifas.useQuery(
-    selectedCicloSemId ? { cicloId: selectedCicloSemId } : undefined,
-    { enabled: !!selectedCicloSemId }
-  );
-
-  const [tarifaValoresSem, setTarifaValoresSem] = useState<Record<string, string>>({});
-  const [tarifaExistenSem, setTarifaExistenSem] = useState<Record<string, number>>({});
-  const [guardandoTarifasSem, setGuardandoTarifasSem] = useState(false);
-  const [tarifaSuccessSem, setTarifaSuccessSem] = useState(false);
-  const [editandoTarifasSem, setEditandoTarifasSem] = useState(false);
-
-  // Listas de ciclos filtradas por periodicidad
-  const ciclosAnuales = ciclos?.filter((c: any) => c.periodicidad !== 'SEMESTRAL') || [];
-  const ciclosSemestrales = ciclos?.filter((c: any) => c.periodicidad === 'SEMESTRAL') || [];
-
-  // Niveles filtrados
-  const nivelesAnuales = niveles?.filter((n: any) => n.codigo !== 'BAC');
-  const nivelesSemestrales = niveles?.filter((n: any) => n.codigo === 'BAC');
-
   const selectedCiclo = ciclos?.find((c: any) => c.cicloId === selectedCicloId);
-  const selectedCicloSem = ciclos?.find((c: any) => c.cicloId === selectedCicloSemId);
 
-  // --- Efectos ANUAL ---
+  // --- Efectos ---
   useEffect(() => {
     setEditandoTarifas(false);
   }, [selectedCicloId]);
 
   useEffect(() => {
-    if (ciclosAnuales.length > 0 && !selectedCicloId) {
-      const active = ciclosAnuales.find((c: any) => c.activo);
-      setSelectedCicloId(active ? active.cicloId : ciclosAnuales[0].cicloId);
+    if (ciclos && ciclos.length > 0 && !selectedCicloId) {
+      const active = ciclos.find((c: any) => c.activo);
+      setSelectedCicloId(active ? active.cicloId : ciclos[0].cicloId);
     }
   }, [ciclos, selectedCicloId]);
 
   useEffect(() => {
-    if (tarifas && nivelesAnuales) {
+    if (tarifas && niveles) {
       const valores: Record<string, string> = {};
       const existen: Record<string, number> = {};
-      nivelesAnuales.forEach((n: any) => {
+      niveles.forEach((n: any) => {
         ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].forEach((concepto) => {
           valores[`${n.nivelId}_${concepto}`] = '';
         });
@@ -116,37 +94,7 @@ export function ConfiguracionPage() {
     }
   }, [tarifas, niveles]);
 
-  // --- Efectos SEMESTRAL ---
-  useEffect(() => {
-    setEditandoTarifasSem(false);
-  }, [selectedCicloSemId]);
-
-  useEffect(() => {
-    if (ciclosSemestrales.length > 0 && !selectedCicloSemId) {
-      const active = ciclosSemestrales.find((c: any) => c.activo);
-      setSelectedCicloSemId(active ? active.cicloId : ciclosSemestrales[0].cicloId);
-    }
-  }, [ciclos, selectedCicloSemId]);
-
-  useEffect(() => {
-    if (tarifasSem && nivelesSemestrales) {
-      const valores: Record<string, string> = {};
-      const existen: Record<string, number> = {};
-      nivelesSemestrales.forEach((n: any) => {
-        ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].forEach((concepto) => {
-          valores[`${n.nivelId}_${concepto}`] = '';
-        });
-      });
-      tarifasSem.forEach((t: any) => {
-        valores[`${t.nivelId}_${t.concepto}`] = String(t.monto);
-        existen[`${t.nivelId}_${t.concepto}`] = t.tarifaId;
-      });
-      setTarifaValoresSem(valores);
-      setTarifaExistenSem(existen);
-    }
-  }, [tarifasSem, niveles]);
-
-  // --- Handlers ANUAL ---
+  // --- Handlers ---
   const handleTarifaChange = (nivelId: number, concepto: string, value: string) => {
     setTarifaValores(prev => ({
       ...prev,
@@ -154,19 +102,12 @@ export function ConfiguracionPage() {
     }));
   };
 
-  const handleTarifaChangeSem = (nivelId: number, concepto: string, value: string) => {
-    setTarifaValoresSem(prev => ({
-      ...prev,
-      [`${nivelId}_${concepto}`]: value
-    }));
-  };
-
   const handleSaveTarifas = async () => {
-    if (!selectedCicloId || !nivelesAnuales) return;
+    if (!selectedCicloId || !niveles) return;
     const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'];
     let hasNegative = false;
     let hasInvalid = false;
-    for (const n of nivelesAnuales) {
+    for (const n of niveles) {
       for (const c of conceptos) {
         const val = tarifaValores[`${n.nivelId}_${c}`];
         if (!val) continue;
@@ -180,7 +121,7 @@ export function ConfiguracionPage() {
     setGuardandoTarifas(true);
     setTarifaSuccess(false);
     try {
-      for (const n of nivelesAnuales) {
+      for (const n of niveles) {
         for (const c of conceptos) {
           const key = `${n.nivelId}_${c}`;
           const val = tarifaValores[key];
@@ -205,59 +146,27 @@ export function ConfiguracionPage() {
     }
   };
 
-  const handleSaveTarifasSem = async () => {
-    if (!selectedCicloSemId || !nivelesSemestrales) return;
-    const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'];
-    let hasNegative = false;
-    let hasInvalid = false;
-    for (const n of nivelesSemestrales) {
-      for (const c of conceptos) {
-        const val = tarifaValoresSem[`${n.nivelId}_${c}`];
-        if (!val) continue;
-        const monto = Number(val);
-        if (isNaN(monto)) hasInvalid = true;
-        else if (monto < 0) hasNegative = true;
-      }
-    }
-    if (hasInvalid) { alert("Error de validación: Se han ingresado valores numéricos inválidos."); return; }
-    if (hasNegative) { alert("Error de validación: No se permiten montos negativos."); return; }
-    setGuardandoTarifasSem(true);
-    setTarifaSuccessSem(false);
-    try {
-      for (const n of nivelesSemestrales) {
-        for (const c of conceptos) {
-          const key = `${n.nivelId}_${c}`;
-          const val = tarifaValoresSem[key];
-          if (!val) continue;
-          const monto = Number(val);
-          const tarifaId = tarifaExistenSem[key];
-          if (tarifaId) {
-            await updateTarifaMutation.mutateAsync({ tarifaId, monto, concepto: c, cicloId: selectedCicloSemId, nivelId: n.nivelId });
-          } else {
-            await createTarifaMutation.mutateAsync({ cicloId: selectedCicloSemId, nivelId: n.nivelId, concepto: c, monto });
-          }
-        }
-      }
-      setTarifaSuccessSem(true);
-      setEditandoTarifasSem(false);
-      utils.pagos.getTarifas.invalidate({ cicloId: selectedCicloSemId });
-      setTimeout(() => setTarifaSuccessSem(false), 3000);
-    } catch (err) {
-      alert('Excepción: Ocurrió un error al guardar algunas tarifas semestrales.');
-    } finally {
-      setGuardandoTarifasSem(false);
-    }
-  };
-
   // --- Cierre de Ciclo por Grupos ---
+  const [selectedCicloCierreId, setSelectedCicloCierreId] = useState<number | undefined>(undefined);
   const [selectedGrupoCierreId, setSelectedGrupoCierreId] = useState<number | null>(null);
   const [promocionesState, setPromocionesState] = useState<Record<number, boolean>>({});
   const [showConfirmModal1, setShowConfirmModal1] = useState(false);
   const [showConfirmModal2, setShowConfirmModal2] = useState(false);
   const [confirmTextInput, setConfirmTextInput] = useState('');
+  const [showReinscripcionMasivaModal, setShowReinscripcionMasivaModal] = useState(false);
 
-  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery();
-  const { data: alumnosCierre, isLoading: loadingAlumnosCierre } = trpc.grupos.getAlumnosCierreGrupo.useQuery(
+  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(
+    selectedCicloCierreId ? { cicloId: selectedCicloCierreId } : undefined
+  );
+
+  useEffect(() => {
+    if (ciclos && ciclos.length > 0 && !selectedCicloCierreId) {
+      const active = ciclos.find((c: any) => c.activo);
+      setSelectedCicloCierreId(active ? active.cicloId : ciclos[0].cicloId);
+    }
+  }, [ciclos, selectedCicloCierreId]);
+
+  const { data: alumnosCierre, isLoading: loadingAlumnosCierre, refetch: refetchAlumnosCierre } = trpc.grupos.getAlumnosCierreGrupo.useQuery(
     { grupoId: selectedGrupoCierreId! },
     { enabled: !!selectedGrupoCierreId }
   );
@@ -314,6 +223,16 @@ export function ConfiguracionPage() {
           }`}
         >
           Finanzas y Tarifas
+        </button>
+        <button
+          onClick={() => setActiveTab('promociones')}
+          className={`px-6 py-3 font-semibold text-sm transition-all border-b-2 cursor-pointer ${
+            activeTab === 'promociones'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-500 hover:text-navy-800'
+          }`}
+        >
+          Promociones y Descuentos
         </button>
         <button
           onClick={() => setActiveTab('cierre')}
@@ -438,264 +357,117 @@ export function ConfiguracionPage() {
         )}
 
         {activeTab === 'tarifas' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Grid de tarifas (Izquierda) */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-8">
-                
-                {/* === SECCIÓN ANUAL === */}
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="text-red-600" size={20} />
-                      <h3 className="font-bold text-navy-800 text-lg">Tarifas por Nivel Educativo</h3>
-                      <span className="text-[10px] font-semibold uppercase bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full">Ciclo Anual</span>
-                    </div>
-                    
-                    {/* Selector de Ciclo Anual */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 font-semibold uppercase">Ciclo Escolar:</span>
-                      <select
-                        value={selectedCicloId || ''}
-                        onChange={(e) => setSelectedCicloId(Number(e.target.value))}
-                        className="px-3 py-1.5 rounded-xl border border-gray-200 outline-none text-sm focus:ring-2 focus:ring-navy-500 bg-white"
-                      >
-                        {ciclosAnuales.map((c: any) => (
-                          <option key={c.cicloId} value={c.cicloId}>
-                            {c.nombre} {c.activo ? '(Activo)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-8">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="text-red-600" size={20} />
+                    <h3 className="font-bold text-navy-800 text-lg">Tarifas por Nivel Educativo</h3>
                   </div>
-
-                  {ciclosAnuales.length === 0 ? (
-                    <div className="py-8 text-center text-gray-400 text-sm">
-                      No hay ciclos escolares anuales registrados.
-                    </div>
-                  ) : loadingNiveles || loadingTarifas ? (
-                    <div className="py-8 text-center text-gray-400 flex items-center justify-center gap-2">
-                      <RefreshCw className="animate-spin" size={18} /> Cargando tarifas financieras...
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-gray-600 text-xs uppercase">
-                            <th className="py-3 font-semibold">Nivel Educativo</th>
-                            <th className="py-3 font-semibold text-center">Inscripción ($)</th>
-                            <th className="py-3 font-semibold text-center">Arancel ($)</th>
-                            <th className="py-3 font-semibold text-center">Materiales ($)</th>
-                            <th className="py-3 font-semibold text-center">Libros ($)</th>
-                            <th className="py-3 font-semibold text-center">Uniforme ($)</th>
-                            <th className="py-3 font-semibold text-center">Colegiatura ($ / Mes)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {nivelesAnuales?.map((n: any) => (
-                            <tr key={n.nivelId}>
-                              <td className="py-4 font-bold text-navy-800">{n.nombre}</td>
-                              {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].map((c) => (
-                                <td key={c} className="py-4 text-center">
-                                  <input
-                                    type="number"
-                                    disabled={!editandoTarifas}
-                                    value={tarifaValores[`${n.nivelId}_${c}`] || ''}
-                                    onChange={(e) => handleTarifaChange(n.nivelId, c, e.target.value)}
-                                    className="w-20 text-center py-1.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-navy-500 font-medium disabled:bg-gray-50 disabled:text-gray-400"
-                                    placeholder="0.00"
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-3 pt-2 items-center">
-                    {tarifaSuccess && (
-                      <span className="text-green-600 text-sm font-semibold flex items-center gap-1.5 animate-in fade-in">
-                        <Check size={16} /> Tarifas guardadas con éxito
-                      </span>
-                    )}
-                    {selectedCiclo?.activo ? (
-                      editandoTarifas ? (
-                        <Button
-                          onClick={handleSaveTarifas}
-                          isLoading={guardandoTarifas}
-                          disabled={loadingTarifas}
-                          variant="primary"
-                          className="rounded-xl px-6 py-2 font-medium"
-                        >
-                          Guardar Montos
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => setEditandoTarifas(true)}
-                          disabled={loadingTarifas}
-                          variant="primary"
-                          className="rounded-xl px-6 py-2 font-medium"
-                        >
-                          Modificar Montos
-                        </Button>
-                      )
-                    ) : (
-                      <span className="text-gray-400 text-xs font-semibold uppercase italic bg-gray-50 border border-gray-150 px-3 py-2 rounded-xl">
-                        Solo lectura (Ciclo Inactivo)
-                      </span>
-                    )}
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 font-semibold uppercase">Ciclo Escolar:</span>
+                    <select
+                      value={selectedCicloId || ''}
+                      onChange={(e) => setSelectedCicloId(Number(e.target.value))}
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 outline-none text-sm focus:ring-2 focus:ring-navy-500 bg-white"
+                    >
+                      {ciclos?.map((c: any) => (
+                        <option key={c.cicloId} value={c.cicloId}>
+                          {c.nombre} {c.activo ? '(Activo)' : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-6"></div>
-
-                {/* === SECCIÓN SEMESTRAL (BACHILLERATO) === */}
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="text-purple-600" size={20} />
-                      <h3 className="font-bold text-navy-800 text-lg">Tarifas de Bachillerato</h3>
-                      <span className="text-[10px] font-semibold uppercase bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded-full">Ciclo Semestral</span>
-                    </div>
-                    
-                    {/* Selector de Ciclo Semestral */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 font-semibold uppercase">Ciclo Escolar:</span>
-                      <select
-                        value={selectedCicloSemId || ''}
-                        onChange={(e) => setSelectedCicloSemId(Number(e.target.value))}
-                        className="px-3 py-1.5 rounded-xl border border-gray-200 outline-none text-sm focus:ring-2 focus:ring-purple-500 bg-white"
-                      >
-                        {ciclosSemestrales.map((c: any) => (
-                          <option key={c.cicloId} value={c.cicloId}>
-                            {c.nombre} {c.activo ? '(Activo)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {!ciclos || ciclos.length === 0 ? (
+                  <div className="py-8 text-center text-gray-400 text-sm">
+                    No hay ciclos escolares registrados.
                   </div>
-
-                  {ciclosSemestrales.length === 0 ? (
-                    <div className="py-8 text-center text-gray-400 text-sm">
-                      No hay ciclos escolares semestrales registrados.
-                    </div>
-                  ) : loadingNiveles || loadingTarifasSem ? (
-                    <div className="py-8 text-center text-gray-400 flex items-center justify-center gap-2">
-                      <RefreshCw className="animate-spin" size={18} /> Cargando tarifas de bachillerato...
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-gray-600 text-xs uppercase">
-                            <th className="py-3 font-semibold">Nivel Educativo</th>
-                            <th className="py-3 font-semibold text-center">Inscripción ($)</th>
-                            <th className="py-3 font-semibold text-center">Arancel ($)</th>
-                            <th className="py-3 font-semibold text-center">Materiales ($)</th>
-                            <th className="py-3 font-semibold text-center">Libros ($)</th>
-                            <th className="py-3 font-semibold text-center">Uniforme ($)</th>
-                            <th className="py-3 font-semibold text-center">Colegiatura ($ / Mes)</th>
+                ) : loadingNiveles || loadingTarifas ? (
+                  <div className="py-8 text-center text-gray-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="animate-spin" size={18} /> Cargando tarifas financieras...
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-gray-600 text-xs uppercase">
+                          <th className="py-3 font-semibold">Nivel Educativo</th>
+                          <th className="py-3 font-semibold text-center">Inscripción ($)</th>
+                          <th className="py-3 font-semibold text-center">Arancel ($)</th>
+                          <th className="py-3 font-semibold text-center">Materiales ($)</th>
+                          <th className="py-3 font-semibold text-center">Libros ($)</th>
+                          <th className="py-3 font-semibold text-center">Uniforme ($)</th>
+                          <th className="py-3 font-semibold text-center">Colegiatura ($ / Mes)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {niveles?.map((n: any) => (
+                          <tr key={n.nivelId}>
+                            <td className="py-4 font-bold text-navy-800">{n.nombre}</td>
+                            {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].map((c) => (
+                              <td key={c} className="py-4 text-center">
+                                <input
+                                  type="number"
+                                  disabled={!editandoTarifas}
+                                  value={tarifaValores[`${n.nivelId}_${c}`] || ''}
+                                  onChange={(e) => handleTarifaChange(n.nivelId, c, e.target.value)}
+                                  className="w-20 text-center py-1.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-navy-500 font-medium disabled:bg-gray-50 disabled:text-gray-400"
+                                  placeholder="0.00"
+                                />
+                              </td>
+                            ))}
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {nivelesSemestrales?.map((n: any) => (
-                            <tr key={n.nivelId}>
-                              <td className="py-4 font-bold text-navy-800">{n.nombre}</td>
-                              {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].map((c) => (
-                                <td key={c} className="py-4 text-center">
-                                  <input
-                                    type="number"
-                                    disabled={!editandoTarifasSem}
-                                    value={tarifaValoresSem[`${n.nivelId}_${c}`] || ''}
-                                    onChange={(e) => handleTarifaChangeSem(n.nivelId, c, e.target.value)}
-                                    className="w-20 text-center py-1.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 font-medium disabled:bg-gray-50 disabled:text-gray-400"
-                                    placeholder="0.00"
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-3 pt-2 items-center">
-                    {tarifaSuccessSem && (
-                      <span className="text-green-600 text-sm font-semibold flex items-center gap-1.5 animate-in fade-in">
-                        <Check size={16} /> Tarifas guardadas con éxito
-                      </span>
-                    )}
-                    {selectedCicloSem?.activo ? (
-                      editandoTarifasSem ? (
-                        <Button
-                          onClick={handleSaveTarifasSem}
-                          isLoading={guardandoTarifasSem}
-                          disabled={loadingTarifasSem}
-                          variant="primary"
-                          className="rounded-xl px-6 py-2 font-medium"
-                        >
-                          Guardar Montos
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => setEditandoTarifasSem(true)}
-                          disabled={loadingTarifasSem}
-                          variant="primary"
-                          className="rounded-xl px-6 py-2 font-medium"
-                        >
-                          Modificar Montos
-                        </Button>
-                      )
-                    ) : (
-                      <span className="text-gray-400 text-xs font-semibold uppercase italic bg-gray-50 border border-gray-150 px-3 py-2 rounded-xl">
-                        Solo lectura (Ciclo Inactivo)
-                      </span>
-                    )}
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2 items-center">
+                  {tarifaSuccess && (
+                    <span className="text-green-600 text-sm font-semibold flex items-center gap-1.5 animate-in fade-in">
+                      <Check size={16} /> Tarifas guardadas con éxito
+                    </span>
+                  )}
+                  {selectedCiclo?.activo ? (
+                    editandoTarifas ? (
+                      <Button
+                        onClick={handleSaveTarifas}
+                        isLoading={guardandoTarifas}
+                        disabled={loadingTarifas}
+                        variant="primary"
+                        className="rounded-xl px-6 py-2 font-medium"
+                      >
+                        Guardar Montos
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setEditandoTarifas(true)}
+                        disabled={loadingTarifas}
+                        variant="primary"
+                        className="rounded-xl px-6 py-2 font-medium"
+                      >
+                        Modificar Montos
+                      </Button>
+                    )
+                  ) : (
+                    <span className="text-gray-400 text-xs font-semibold uppercase italic bg-gray-50 border border-gray-150 px-3 py-2 rounded-xl">
+                      Solo lectura (Ciclo Inactivo)
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Pronto pago e instructivo (Derecha) */}
-            <div className="space-y-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-                  <CheckCircle className="text-green-600" size={18} />
-                  <h4 className="font-bold text-navy-800">Promoción Pronto Pago</h4>
-                </div>
-                <div className="p-4 bg-green-50/50 rounded-xl border border-green-100 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-green-800">15% de Descuento</span>
-                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">Activo</span>
-                  </div>
-                  <p className="text-xs text-green-700">Aplica para mensualidades pagadas durante los primeros 10 días de cada mes lectivo.</p>
-                  <div className="text-[10px] text-green-600 pt-2 border-t border-green-100 flex justify-between">
-                    <span>Inicio: 01/01/2026</span>
-                    <span>Fin: 31/12/2026</span>
-                  </div>
-                </div>
-                <button
-                  disabled
-                  className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-50 cursor-not-allowed text-center"
-                >
-                  + Nueva Promoción (Deshabilitado en Demo)
-                </button>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-3">
-                <div className="flex items-center gap-2 text-gray-700 font-semibold border-b border-gray-100 pb-2">
-                  <Info size={16} />
-                  <span className="text-sm">Configuraciones de Cobro</span>
-                </div>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Las tarifas aquí definidas representan los costos base para el ciclo seleccionado. Cuando un alumno sea inscrito, se le aplicarán de forma proporcional o total estos conceptos según su nivel educativo correspondiente.
-                </p>
-              </div>
-            </div>
+        {activeTab === 'promociones' && (
+          <div className="space-y-6">
+            <ConfiguracionPromocionesTab />
           </div>
         )}
 
@@ -703,9 +475,30 @@ export function ConfiguracionPage() {
           <div className="space-y-6">
             {!selectedGrupoCierreId ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-                <div className="border-b border-gray-100 pb-4">
-                  <h3 className="text-lg font-bold text-navy-800">Cierre de Ciclo por Grupos</h3>
-                  <p className="text-xs text-gray-500">Selecciona un grupo para verificar el estado de sus alumnos y proceder con el cierre de ciclo.</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-navy-800">Cierre de Ciclo por Grupos</h3>
+                    <p className="text-xs text-gray-500">Selecciona un grupo para verificar el estado de sus alumnos y proceder con el cierre de ciclo.</p>
+                  </div>
+                  
+                  {/* Selector de Ciclo para Operaciones */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 font-semibold uppercase">Ciclo a Operar:</span>
+                    <select
+                      value={selectedCicloCierreId || ''}
+                      onChange={(e) => {
+                        setSelectedCicloCierreId(Number(e.target.value));
+                        setSelectedGrupoCierreId(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 outline-none text-sm focus:ring-2 focus:ring-orange-500 bg-white"
+                    >
+                      {ciclos?.map((c: any) => (
+                        <option key={c.cicloId} value={c.cicloId}>
+                          {c.nombre} {c.activo ? '(Activo)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {loadingGrupos ? (
@@ -812,6 +605,30 @@ export function ConfiguracionPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {!(grupos?.find((g: any) => g.grupoId === selectedGrupoCierreId) as any)?.cerrado && alumnosCierre && alumnosCierre.length > 0 && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          className="text-xs bg-gray-100 hover:bg-gray-200 py-1.5 px-3 rounded-lg"
+                          onClick={() => {
+                            const newPromociones: Record<number, boolean> = {};
+                            alumnosCierre.forEach((a: any) => {
+                              newPromociones[a.alumnoId] = true;
+                            });
+                            setPromocionesState(newPromociones);
+                          }}
+                        >
+                          Seleccionar Todos
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="text-xs bg-gray-100 hover:bg-gray-200 py-1.5 px-3 rounded-lg text-red-600 hover:text-red-700"
+                          onClick={() => setPromocionesState({})}
+                        >
+                          Desmarcar Todos
+                        </Button>
+                      </div>
+                    )}
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 text-xs uppercase">
@@ -851,7 +668,7 @@ export function ConfiguracionPage() {
                               <td className="px-6 py-4 text-center">
                                 <input
                                   type="checkbox"
-                                  disabled={a.tieneAdeudo || a.tieneReprobadas || (grupos?.find((g: any) => g.grupoId === selectedGrupoCierreId) as any)?.cerrado}
+                                  disabled={(grupos?.find((g: any) => g.grupoId === selectedGrupoCierreId) as any)?.cerrado}
                                   checked={!!promocionesState[a.alumnoId]}
                                   onChange={(e) => {
                                     setPromocionesState(prev => ({
@@ -887,6 +704,20 @@ export function ConfiguracionPage() {
                           onClick={() => setShowConfirmModal1(true)}
                         >
                           <AlertTriangle size={18} className="mr-2" /> Cerrar Ciclo de Grupo
+                        </Button>
+                      </div>
+                    )}
+
+                    {(grupos?.find((g: any) => g.grupoId === selectedGrupoCierreId) as any)?.cerrado && (
+                      <div className="flex justify-between items-center p-4 bg-blue-50 border border-blue-100 rounded-2xl mt-4">
+                        <span className="text-sm text-blue-800 leading-relaxed max-w-md">
+                          Este grupo ya fue cerrado. Puedes usar el Asistente de Reinscripción Masiva para promover a los alumnos a su nuevo ciclo y grado.
+                        </span>
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 shadow-sm rounded-xl px-6 py-2.5 font-bold cursor-pointer text-white"
+                          onClick={() => setShowReinscripcionMasivaModal(true)}
+                        >
+                          <Users size={18} className="mr-2 inline" /> Reinscripción Masiva
                         </Button>
                       </div>
                     )}
@@ -975,6 +806,15 @@ export function ConfiguracionPage() {
           </div>
         </div>
       </Modal>
+
+      {selectedGrupoCierreId && (
+        <ReinscripcionMasivaModal
+          grupoId={selectedGrupoCierreId}
+          isOpen={showReinscripcionMasivaModal}
+          onClose={() => setShowReinscripcionMasivaModal(false)}
+          onSuccess={() => refetchAlumnosCierre()}
+        />
+      )}
     </div>
   );
 }

@@ -60,7 +60,7 @@ export const createCargoExtraordinarioSchema = z.object({
   alumnoId: z.number().int().positive(),
   cicloId: z.number().int().positive(),
   concepto: z.string().min(3).max(100),
-  monto: z.number().positive(),
+  monto: z.number().nonnegative('El monto no puede ser negativo'),
   fechaVencimiento: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Debe ser una fecha válida (ISO 8601)",
   })

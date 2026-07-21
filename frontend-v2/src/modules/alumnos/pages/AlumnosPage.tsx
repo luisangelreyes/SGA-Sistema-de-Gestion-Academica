@@ -42,7 +42,7 @@ export function AlumnosPage() {
     if (!alumnos) return [];
 
     // 1. Filter
-    const filtered = alumnos.filter(a => {
+    const filtered = alumnos.filter((a: any) => {
       // Search
       const fullName = (a.nombreCompleto || '').toLowerCase();
       const matricula = a.matricula?.toLowerCase() || '';
@@ -91,9 +91,9 @@ export function AlumnosPage() {
   }, [alumnos, searchTerm, estadoFilter, nivelFilter, gradoFilter, grupoFilter]);
 
   // Derived filter options based on available data
-  const availableNiveles = useMemo(() => Array.from(new Set(alumnos?.map(a => a.nivel?.nombre).filter(Boolean))), [alumnos]);
-  const availableGrados = useMemo(() => Array.from(new Set(alumnos?.map(a => a.inscripciones?.[0]?.grupo?.grado?.nombre).filter(Boolean))), [alumnos]);
-  const availableGrupos = useMemo(() => Array.from(new Set(alumnos?.map(a => a.inscripciones?.[0]?.grupo?.nombre).filter(Boolean))), [alumnos]);
+  const availableNiveles = useMemo(() => Array.from(new Set(alumnos?.map((a: any) => a.nivel?.nombre).filter(Boolean))), [alumnos]);
+  const availableGrados = useMemo(() => Array.from(new Set(alumnos?.map((a: any) => a.inscripciones?.[0]?.grupo?.grado?.nombre).filter(Boolean))), [alumnos]);
+  const availableGrupos = useMemo(() => Array.from(new Set(alumnos?.map((a: any) => a.inscripciones?.[0]?.grupo?.nombre).filter(Boolean))), [alumnos]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
@@ -103,7 +103,7 @@ export function AlumnosPage() {
     // Basic export functionality
     const csvContent = "data:text/csv;charset=utf-8,"
       + "Matricula,Nombre,Nivel,Grado,Grupo,Estado\n"
-      + filteredAndSortedData.map(a => {
+      + filteredAndSortedData.map((a: any) => {
         const insc = a.inscripciones?.[0];
         return `${a.matricula || ''},${a.nombreCompleto || ''},${a.nivel?.nombre || ''},${insc?.grupo?.grado?.nombre || ''},${insc?.grupo?.nombre || ''},${a.estado}`;
       }).join("\n");

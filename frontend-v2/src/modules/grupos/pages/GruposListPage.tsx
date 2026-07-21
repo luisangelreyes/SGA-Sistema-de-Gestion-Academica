@@ -61,14 +61,11 @@ export function GruposListPage() {
   });
 
   // --- Ciclos Activos ---
-  const cicloAnualActivo = ciclos?.find(c => c.activo && c.periodicidad === 'ANUAL');
-  const cicloSemestralActivo = ciclos?.find(c => c.activo && c.periodicidad === 'SEMESTRAL');
+  const cicloActivo = ciclos?.find(c => c.activo);
+  const cicloActivoId = cicloActivo?.cicloId;
 
-  const cicloAnualActivoId = cicloAnualActivo?.cicloId;
-  const cicloSemestralActivoId = cicloSemestralActivo?.cicloId;
-
-  const getCicloIdForNivel = (nivelCodigo: string) => {
-    return nivelCodigo === 'BAC' ? cicloSemestralActivoId : cicloAnualActivoId;
+  const getCicloIdForNivel = () => {
+    return cicloActivoId;
   };
 
   // --- Handlers ---
@@ -109,35 +106,35 @@ export function GruposListPage() {
     return materias?.filter(m => m.gradoId === gradoId) || [];
   };
 
-  const getAlumnosGrado = (gradoId: number, nivelCodigo: string) => {
-    const cycleId = getCicloIdForNivel(nivelCodigo);
-    return todasLasInscripciones?.filter(i => 
+  const getAlumnosGrado = (gradoId: number) => {
+    const cycleId = getCicloIdForNivel();
+    return todasLasInscripciones?.filter((i: any) => 
       (i.grupo?.gradoId === gradoId || i.alumno?.gradoId === gradoId) && 
       i.cicloId === cycleId
     ) || [];
   };
 
-  const getGruposGrado = (gradoId: number, nivelCodigo: string) => {
-    const cycleId = getCicloIdForNivel(nivelCodigo);
-    return todosLosGrupos?.filter(g => g.gradoId === gradoId && g.cicloId === cycleId) || [];
+  const getGruposGrado = (gradoId: number) => {
+    const cycleId = getCicloIdForNivel();
+    return todosLosGrupos?.filter((g: any) => g.gradoId === gradoId && g.cicloId === cycleId) || [];
   };
 
   // Filtrado de alumnos inscritos en el grado actual
-  const alumnosDelGrado = cursoSeleccionado ? getAlumnosGrado(cursoSeleccionado.gradoId, cursoSeleccionado.nivelCodigo) : [];
-  const gruposDelGrado = cursoSeleccionado ? getGruposGrado(cursoSeleccionado.gradoId, cursoSeleccionado.nivelCodigo) : [];
+  const alumnosDelGrado = cursoSeleccionado ? getAlumnosGrado(cursoSeleccionado.gradoId) : [];
+  const gruposDelGrado = cursoSeleccionado ? getGruposGrado(cursoSeleccionado.gradoId) : [];
 
   // Secciones únicas para el selector de filtro
   const seccionesDisponibles = Array.from(
-    new Set(gruposDelGrado.map(g => g.nombre).filter(Boolean))
+    new Set(gruposDelGrado.map((g: any) => g.nombre).filter(Boolean))
   );
 
   const alumnosFiltrados = filtroSeccion === 'Todas'
     ? alumnosDelGrado
-    : alumnosDelGrado.filter(i => i.grupo?.nombre === filtroSeccion);
+    : alumnosDelGrado.filter((i: any) => i.grupo?.nombre === filtroSeccion);
 
   // Obtener el ID del grupo correspondiente a la sección seleccionada en el filtro
   const grupoSeleccionado = filtroSeccion !== 'Todas' 
-    ? gruposDelGrado.find(g => g.nombre === filtroSeccion)
+    ? gruposDelGrado.find((g: any) => g.nombre === filtroSeccion)
     : null;
 
   // Renderizar la Vista Detallada de Grado
@@ -276,7 +273,7 @@ export function GruposListPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {alumnosFiltrados.map((i) => (
+                      {alumnosFiltrados.map((i: any) => (
                         <tr 
                           key={i.inscripcionId} 
                           className="hover:bg-gray-50 transition-colors cursor-pointer" 
@@ -311,7 +308,7 @@ export function GruposListPage() {
           onClose={() => setIsGrupoModalOpen(false)}
           grupoId={editingGrupo?.grupoId}
           initialData={editingGrupo}
-          defaultCicloId={getCicloIdForNivel(cursoSeleccionado.nivelCodigo)}
+          defaultCicloId={getCicloIdForNivel()}
           defaultNivelId={cursoSeleccionado.nivelId}
           defaultGradoId={cursoSeleccionado.gradoId}
         />
@@ -334,14 +331,9 @@ export function GruposListPage() {
 
         {/* Listado de Ciclos Activos */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          {cicloAnualActivo && (
+          {cicloActivo && (
             <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-100 text-xs font-semibold">
-              <Calendar size={14} /> Anual Activo: {cicloAnualActivo.nombre}
-            </span>
-          )}
-          {cicloSemestralActivo && (
-            <span className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-xl border border-purple-100 text-xs font-semibold">
-              <Calendar size={14} /> Semestral Activo: {cicloSemestralActivo.nombre}
+              <Calendar size={14} /> Ciclo Activo: {cicloActivo.nombre}
             </span>
           )}
         </div>
@@ -365,8 +357,8 @@ export function GruposListPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {gradosDelNivel.map((grado) => {
                       const materiasGradoCount = getMateriasGrado(grado.gradoId).length;
-                      const alumnosGradoCount = getAlumnosGrado(grado.gradoId, nivel.codigo).length;
-                      const gruposGradoCount = getGruposGrado(grado.gradoId, nivel.codigo).length;
+                      const alumnosGradoCount = getAlumnosGrado(grado.gradoId).length;
+                      const gruposGradoCount = getGruposGrado(grado.gradoId).length;
 
                       return (
                         <div 

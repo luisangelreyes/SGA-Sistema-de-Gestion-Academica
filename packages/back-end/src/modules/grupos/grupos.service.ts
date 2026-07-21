@@ -7,9 +7,13 @@ import type {
   CreateMateriaInput, UpdateMateriaInput,
   CreateGrupoInput, UpdateGrupoInput,
   AssignMateriaGrupoInput, UnassignMateriaGrupoInput,
+  GetAlumnosCierreGrupoInput,
   CerrarCicloGrupoInput,
+  ReinscripcionMasivaGrupoInput,
+  GetGradosParaInicializarInput,
   InicializarGruposSeleccionadosInput
 } from './grupos.schema';
+import { InscripcionesService } from '../inscripciones/inscripciones.service';
 import { GruposRepository } from './grupos.repository';
 
 const CONSTANT_NIVELES = [
@@ -175,11 +179,12 @@ export class GruposService {
   }
 
   static async createCiclo(input: CreateCicloEscolarInput) {
+    const { clonarDesdeCicloId, ...cicloData } = input;
     const c = await GruposRepository.createCiclo({
-      ...input,
+      ...cicloData,
       fechaInicio: new Date(input.fechaInicio),
       fechaFin: new Date(input.fechaFin)
-    });
+    }, clonarDesdeCicloId);
     return {
       ...c,
       gradosPermitidos: c.gradosPermitidos as Record<string, number[]> | null
@@ -352,10 +357,34 @@ export class GruposService {
           data: { docenteId: data.docenteId || null }
         });
       }
-    } else if (grupoId === null) {
+    } else if (grupoId === null || gradoId === null) {
       await prisma.grupoMateria.deleteMany({
         where: { materiaId }
       });
+    } else if (gradoId !== undefined && gradoId !== null) {
+      // Se asignó la materia al Grado, cascada a todos los grupos de este grado
+      const gruposGrado = await prisma.grupo.findMany({
+        where: { gradoId, eliminadoEn: null }
+      });
+      for (const g of gruposGrado) {
+        const exist = await prisma.grupoMateria.findFirst({
+          where: { materiaId, grupoId: g.grupoId }
+        });
+        if (!exist) {
+          await prisma.grupoMateria.create({
+            data: {
+              grupoId: g.grupoId,
+              materiaId,
+              docenteId: data.docenteId || null
+            }
+          });
+        } else if (data.docenteId !== undefined) {
+          await prisma.grupoMateria.update({
+            where: { grupoMateriaId: exist.grupoMateriaId },
+            data: { docenteId: data.docenteId || null }
+          });
+        }
+      }
     }
 
     return updatedMateria;
@@ -484,7 +513,9 @@ export class GruposService {
         nombreCompleto: insc.alumno.nombreCompleto,
         curp: insc.alumno.curp,
         tieneAdeudo,
-        tieneReprobadas
+        tieneReprobadas,
+        estado: insc.alumno.estado,
+        estadoEnCiclo: insc.estadoEnCiclo
       });
     }
 
@@ -540,6 +571,70 @@ export class GruposService {
 
       return { success: true };
     });
+  }
+
+  static async reinscripcionMasivaGrupo(input: ReinscripcionMasivaGrupoInput) {
+    const { cicloIdDestino, promociones } = input;
+    
+    // Verificamos que el ciclo destino exista
+    const cicloDestino = await prisma.cicloEscolar.findUnique({
+      where: { cicloId: cicloIdDestino }
+    });
+    if (!cicloDestino) throw new TRPCError({ code: 'NOT_FOUND', message: 'Ciclo destino no encontrado' });
+
+    let exito = 0;
+    let errores = 0;
+
+    for (const promo of promociones) {
+      try {
+        if (promo.egresado) {
+          // Si es egresado, solo marcamos su estado como EGRESADO
+          await prisma.alumno.update({
+            where: { alumnoId: promo.alumnoId },
+            data: { estado: 'EGRESADO', actualizadoEn: new Date() }
+          });
+          exito++;
+          continue;
+        }
+
+        if (!promo.grupoIdDestino) {
+          throw new Error('Grupo destino es requerido para alumnos no egresados');
+        }
+
+        // 1. Crear Inscripcion
+        const nuevaInscripcion = await InscripcionesService.createInscripcion({
+          alumnoId: promo.alumnoId,
+          cicloId: cicloIdDestino,
+          grupoId: promo.grupoIdDestino,
+          gradoId: null, // Asumimos que createInscripcion resolverá o no se requiere estricto aquí si hay grupo
+          fechaIngreso: new Date().toISOString(),
+          esIngresoTardio: false,
+          estadoEnCiclo: 'INSCRITO',
+          estadoFinanciero: 'NO_APLICA'
+        });
+
+        // 2. Asignar Plan de Pago y Generar Calendario automáticamente
+        if (promo.planPagoId && nuevaInscripcion) {
+          await InscripcionesService.asignarPlanPago({
+            inscripcionId: nuevaInscripcion.inscripcionId,
+            planPagoId: promo.planPagoId
+          });
+        }
+
+        // 3. Cambiar el estado del alumno de regreso a ACTIVO
+        await prisma.alumno.update({
+          where: { alumnoId: promo.alumnoId },
+          data: { estado: 'ACTIVO', actualizadoEn: new Date() }
+        });
+
+        exito++;
+      } catch (error) {
+        console.error(`Error reinscribiendo alumno ${promo.alumnoId}:`, error);
+        errores++;
+      }
+    }
+
+    return { success: true, procesados: exito, errores };
   }
 
   // --- Inicialización Selectiva de Grupos ---

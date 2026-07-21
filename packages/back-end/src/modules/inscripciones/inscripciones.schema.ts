@@ -16,10 +16,13 @@ export const updatePlanPagoSchema = createPlanPagoSchema.partial().extend({
 
 // --- Ventanas de Inscripción Temprana ---
 export const createVentanaInscripcionSchema = z.object({
-  cicloId: z.number().int().positive(),
-  becaId: z.number().int().positive(),
-  fechaInicio: z.string().datetime(),
-  fechaFin: z.string().datetime(),
+  cicloId: z.number().int().positive('Debe seleccionar un ciclo escolar'),
+  fechaInicio: z.string().datetime({ message: 'Fecha de inicio inválida' }),
+  fechaFin: z.string().datetime({ message: 'Fecha de fin inválida' }),
+  descuentoInscripcion: z.number().min(0).max(100, 'El descuento no puede superar 100%'),
+  becaId: z.number().int().positive().optional().nullable(),
+  nivelId: z.number().int().positive('Debe seleccionar un nivel educativo'),
+  gradoId: z.number().int().positive().optional().nullable(),
   activa: z.boolean().default(true)
 });
 
@@ -32,6 +35,7 @@ export const createInscripcionSchema = z.object({
   alumnoId: z.number().int().positive(),
   cicloId: z.number().int().positive(),
   grupoId: z.number().int().positive().optional().nullable(),
+  gradoId: z.number().int().positive().optional().nullable(),
   fechaIngreso: z.string().datetime(),
   esIngresoTardio: z.boolean().default(false),
   estadoEnCiclo: z.string().min(1).max(20), // ej. 'INSCRITO', 'BAJA', etc.

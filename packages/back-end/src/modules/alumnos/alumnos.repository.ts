@@ -17,6 +17,7 @@ export class AlumnosRepository {
         inscripciones: {
           where: { estadoEnCiclo: 'INSCRITO', ciclo: { activo: true }, eliminadoEn: null },
           include: { 
+            ciclo: true,
             grupo: {
               include: { grado: true }
             }
@@ -52,10 +53,15 @@ export class AlumnosRepository {
             planPago: true
           }
         },
+        asignacionesBeca: {
+          where: { eliminadoEn: null },
+          include: { beca: true }
+        },
         calendariosPagos: {
           orderBy: { fechaVencimiento: 'asc' },
           where: { eliminadoEn: null },
           include: {
+            ciclo: true,
             aplicacionesPago: {
               include: {
                 pago: {

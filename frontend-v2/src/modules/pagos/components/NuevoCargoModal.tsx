@@ -47,7 +47,9 @@ export function NuevoCargoModal({ isOpen, onClose, alumnoId, cicloId }: NuevoCar
       cicloId,
       concepto,
       monto: Number(monto.replace(/,/g, '')),
-      fechaVencimiento: new Date(fechaVencimiento).toISOString()
+      // Añadimos T12:00:00 para forzar el mediodía local y evitar que el desfase de zona horaria 
+      // lo empuje al día anterior al guardarlo como UTC.
+      fechaVencimiento: new Date(fechaVencimiento + 'T12:00:00').toISOString()
     });
   };
 

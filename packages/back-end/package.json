@@ -2,8 +2,8 @@
   "name": "@sga/back-end",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/index.js",
-  "bin": "dist/index.js",
+  "main": "dist/back-end/src/index.js",
+  "bin": "dist/back-end/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

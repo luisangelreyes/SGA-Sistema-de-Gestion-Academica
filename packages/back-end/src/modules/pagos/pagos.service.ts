@@ -62,7 +62,7 @@ export class PagosService {
       fechaVencimiento: new Date(input.fechaVencimiento),
       montoOriginal: input.monto,
       saldoPendiente: input.monto,
-      estadoCobro: 'PENDIENTE'
+      estadoCobro: input.monto === 0 ? 'PAGADO' : 'PENDIENTE'
     });
   }
 
