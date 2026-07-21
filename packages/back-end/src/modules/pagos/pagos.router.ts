@@ -1,16 +1,20 @@
-import { router, protectedProcedure } from '../../trpc';
+import { router, protectedProcedure, hasModulePermission } from '../../trpc';
 import { z } from 'zod';
 import { PagosService } from './pagos.service';
 import { 
   createTarifaSchema, updateTarifaSchema, 
   createCalendarioPagoSchema, updateCalendarioPagoSchema, 
-  registrarPagoSchema 
+  registrarPagoSchema, createCargoExtraordinarioSchema,
+  adjuntarComprobanteSchema
 } from './pagos.schema';
+
+const lectura = protectedProcedure.use(hasModulePermission('Pagos', false));
+const escritura = protectedProcedure.use(hasModulePermission('Pagos', true));
 
 export const pagosRouter = router({
   
   // --- Tarifas ---
-  getTarifas: protectedProcedure
+  getTarifas: lectura
     .input(z.object({
       cicloId: z.number().int().positive().optional(),
       nivelId: z.number().int().positive().optional()
@@ -19,42 +23,66 @@ export const pagosRouter = router({
       return PagosService.getTarifas(input?.cicloId, input?.nivelId);
     }),
 
-  createTarifa: protectedProcedure
+  createTarifa: escritura
     .input(createTarifaSchema)
     .mutation(({ input }) => PagosService.createTarifa(input)),
 
-  updateTarifa: protectedProcedure
+  updateTarifa: escritura
     .input(updateTarifaSchema)
     .mutation(({ input }) => PagosService.updateTarifa(input)),
 
-  deleteTarifa: protectedProcedure
+  deleteTarifa: escritura
     .input(z.number().int().positive())
     .mutation(({ input }) => PagosService.deleteTarifa(input)),
 
   // --- Adeudos (Calendario de Pagos) ---
-  getAdeudos: protectedProcedure
+  getAdeudos: lectura
     .input(z.object({
       alumnoId: z.number().int().positive(),
       estadoCobro: z.enum(['PENDIENTE', 'PAGADO', 'VENCIDO', 'CANCELADO']).optional()
     }))
     .query(({ input }) => PagosService.getAdeudosAlumno(input.alumnoId, input.estadoCobro)),
 
-  createAdeudo: protectedProcedure
+  createAdeudo: escritura
     .input(createCalendarioPagoSchema)
     .mutation(({ input }) => PagosService.createAdeudo(input)),
 
-  updateAdeudo: protectedProcedure
+  updateAdeudo: escritura
     .input(updateCalendarioPagoSchema)
     .mutation(({ input }) => PagosService.updateAdeudo(input)),
 
-  // --- Registro de Pagos ---
-  registrarPago: protectedProcedure
+  registrarPago: escritura
     .input(registrarPagoSchema)
     .mutation(({ input, ctx }) => {
-      // Tomar el registradorId directamente del token JWT decodificado en ctx
-      const registradorId = ctx.user?.usuarioId;
+      const registradorId = (ctx as any).user?.usuarioId;
       if (!registradorId) throw new Error("No user in context");
       
       return PagosService.registrarPago(input, registradorId);
-    })
+    }),
+
+  // --- Comprobantes Adjuntos ---
+  adjuntarComprobante: escritura
+    .input(adjuntarComprobanteSchema)
+    .mutation(async ({ input, ctx }) => {
+      const registradorId = (ctx as any).user?.usuarioId;
+      if (!registradorId) throw new Error("No user in context");
+      return PagosService.adjuntarComprobante(input, registradorId);
+    }),
+
+  getComprobanteBase64: lectura
+    .input(z.object({ pagoId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      return PagosService.getComprobanteBase64(input.pagoId);
+    }),
+
+  getReciboPago: lectura
+    .input(z.object({ pagoId: z.number().int().positive() }))
+    .query(({ input }) => {
+      return PagosService.getReciboPago(input.pagoId);
+    }),
+
+  // --- Cargos Extraordinarios ---
+  createCargoExtraordinario: escritura
+    .input(createCargoExtraordinarioSchema)
+    .mutation(({ input }) => PagosService.createCargoExtraordinario(input))
 });

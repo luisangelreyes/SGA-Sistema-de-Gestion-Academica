@@ -29,7 +29,8 @@ export const authRouter = router({
     }),
 
   me: protectedProcedure
-    .query(({ ctx }) => {
-      return ctx.user;
+    .query(async ({ ctx }) => {
+      const usuario = await AuthService.obtenerPerfil(ctx.user.usuarioId);
+      return usuario;
     })
 });

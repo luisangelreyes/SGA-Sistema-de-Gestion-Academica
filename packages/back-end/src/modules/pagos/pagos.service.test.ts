@@ -3,6 +3,7 @@ import { PagosService } from './pagos.service';
 import { prismaMock } from '../../../tests/setup/prisma-mock';
 import { TRPCError } from '@trpc/server';
 import { MetodoPago } from '@prisma/client';
+import { createTarifaSchema, createCalendarioPagoSchema } from './pagos.schema';
 
 describe('PagosService (Unit)', () => {
   beforeEach(() => {
@@ -85,7 +86,7 @@ describe('PagosService (Unit)', () => {
   describe('Registro de Pagos', () => {
     it('debería rechazar si montoTotal es menor a las aplicaciones', async () => {
       await expect(PagosService.registrarPago({
-        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 500, metodoPago: 'EFECTIVO' as MetodoPago, aplicadoASaldo: false,
+        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 500, metodoPago: 'EFECTIVO' as MetodoPago, requiereFactura: false, aplicadoASaldo: false,
         aplicaciones: [{ calendarioPagoId: 1, montoAplicado: 1000, aplicadoA: 'CAPITAL' }]
       }, 1)).rejects.toThrowError(new TRPCError({ code: 'BAD_REQUEST', message: 'El monto total del pago es menor que la suma de las aplicaciones indicadas.' }));
     });
@@ -99,7 +100,7 @@ describe('PagosService (Unit)', () => {
       prismaMock.calendarioPago.update.mockResolvedValue({} as any);
 
       const result = await PagosService.registrarPago({
-        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, aplicadoASaldo: false,
+        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, requiereFactura: false, aplicadoASaldo: false,
         aplicaciones: [{ calendarioPagoId: 1, montoAplicado: 1000, aplicadoA: 'CAPITAL' }]
       }, 2);
 
@@ -127,7 +128,7 @@ describe('PagosService (Unit)', () => {
       prismaMock.calendarioPago.findUnique.mockResolvedValue(mockAdeudo as any);
 
       await expect(PagosService.registrarPago({
-        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, aplicadoASaldo: false,
+        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, requiereFactura: false, aplicadoASaldo: false,
         aplicaciones: [{ calendarioPagoId: 1, montoAplicado: 600, aplicadoA: 'CAPITAL' }]
       }, 2)).rejects.toThrowError(new TRPCError({ code: 'BAD_REQUEST', message: 'El monto aplicado al adeudo Test excede su saldo pendiente.' }));
     });
@@ -139,7 +140,7 @@ describe('PagosService (Unit)', () => {
       prismaMock.calendarioPago.findUnique.mockResolvedValue(mockAdeudo as any);
 
       await PagosService.registrarPago({
-        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, aplicadoASaldo: false,
+        alumnoId: 1, tutorId: 1, fechaPago: '2023-01-01', montoTotal: 1000, metodoPago: 'EFECTIVO' as MetodoPago, requiereFactura: false, aplicadoASaldo: false,
         aplicaciones: [{ calendarioPagoId: 1, montoAplicado: 500, aplicadoA: 'CAPITAL' }] // Sobran 500
       }, 2);
 
@@ -157,6 +158,56 @@ describe('PagosService (Unit)', () => {
           monto: 500
         })
       }));
+    });
+  });
+
+  describe('Zod Schemas (Gap 6)', () => {
+    it('createTarifaSchema debería aceptar conceptos de hasta 100 caracteres y rechazar más de 100', () => {
+      const conceptoValido = 'a'.repeat(100);
+      const conceptoInvalido = 'a'.repeat(101);
+
+      const payloadValido = {
+        cicloId: 1,
+        nivelId: 1,
+        concepto: conceptoValido,
+        monto: 1000
+      };
+
+      const payloadInvalido = {
+        cicloId: 1,
+        nivelId: 1,
+        concepto: conceptoInvalido,
+        monto: 1000
+      };
+
+      expect(createTarifaSchema.safeParse(payloadValido).success).toBe(true);
+      expect(createTarifaSchema.safeParse(payloadInvalido).success).toBe(false);
+    });
+
+    it('createCalendarioPagoSchema debería aceptar conceptos de hasta 100 caracteres y rechazar más de 100', () => {
+      const conceptoValido = 'a'.repeat(100);
+      const conceptoInvalido = 'a'.repeat(101);
+
+      const payloadValido = {
+        alumnoId: 1,
+        cicloId: 1,
+        concepto: conceptoValido,
+        montoOriginal: 1000,
+        saldoPendiente: 1000,
+        fechaVencimiento: new Date().toISOString()
+      };
+
+      const payloadInvalido = {
+        alumnoId: 1,
+        cicloId: 1,
+        concepto: conceptoInvalido,
+        montoOriginal: 1000,
+        saldoPendiente: 1000,
+        fechaVencimiento: new Date().toISOString()
+      };
+
+      expect(createCalendarioPagoSchema.safeParse(payloadValido).success).toBe(true);
+      expect(createCalendarioPagoSchema.safeParse(payloadInvalido).success).toBe(false);
     });
   });
 });

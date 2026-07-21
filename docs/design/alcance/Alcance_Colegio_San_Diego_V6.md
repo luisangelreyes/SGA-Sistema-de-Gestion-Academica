@@ -11,10 +11,10 @@ El Colegio San Diego (\~200 familias) requiere digitalizar y automatizar su gest
 La jerarquía de permisos está definida bajo el principio de menor privilegio:
 
 * **Administradora :** Acceso total.  
-* **Personal Administrativo:** Gestión operativa, reportes y configuración flexible (con registro de auditoría).  
+* **Gestor:** Gestión operativa, reportes y configuración flexible (con registro de auditoría).  
 * **Docente:** Captura de calificaciones (filtro dinámico por grupos asignados).  
 * **Protocolo de Recuperación de Accesos (Offline/KISS):**  
-  * *Personal y Docentes:* Restablecimiento manual por la Administradora desde el panel de usuarios.  
+  * *Gestor y Docentes:* Restablecimiento manual por la Administradora desde el panel de usuarios.  
   * *Administradora (Root):* Restablecimiento exclusivo mediante acceso físico al Servidor (CLI).
 
 #### **Matriz de Permisos de Usuario**
@@ -38,16 +38,21 @@ La jerarquía de permisos está definida bajo el principio de menor privilegio:
 
 * **Control Escolar (Gestión de Alumnos):** \* Gestión de alumnos con **Soft Delete** (baja lógica para preservación de historial).
   * **Estatus del Alumno (Ciclo de Vida):** El sistema gestiona una máquina de estados estricta para cada alumno con los siguientes estatus: 'Activo', 'Baja Temporal', 'Baja Definitiva', 'Egresado' y 'Transición Pendiente'. Se permite el **Reingreso** de alumnos inactivos (Baja Definitiva o Egresados) reanudando su expediente sin crear duplicados.
-  * **Gestión de Estructura Académica:** Módulo para administrar Ciclos Escolares (soportando periodicidad Anual y Semestral), Grados y Grupos.  
-  * **Inscripción (Nuevo Ingreso):** Flujo guiado (Wizard) para captura simultánea de Tutor, Alumno, Autorizados y generación de primer adeudo.  
-  * **Transición de Ciclo Escolar (Matriculación Masiva):** Panel interactivo (Data Grid) para promover alumnos al siguiente ciclo en bloque por Nivel Educativo, permitiendo transiciones semestrales (Bachillerato) y anuales (Resto de niveles), con filtros y exclusiones individuales.  
+  * **Gestión de Estructura Académica:** Módulo para administrar Ciclos Escolares (soportando periodicidad Anual y Semestral con coexistencia paralela de un ciclo activo por cada tipo de periodicidad), Grados y Grupos.  
+  * **Inscripción (Nuevo Ingreso) y Bloqueo Académico:** Flujo guiado (Wizard) para captura simultánea de Tutor, Alumno, Autorizados y generación de primer adeudo. Se valida que el alumno no arrastre materias reprobadas (calificación menor a 6.0) ni talleres "NO ACREDITADOS", o adeudos del ciclo previo.  
+  * **Transición de Ciclo Escolar (Matriculación Masiva):** Panel interactivo (Data Grid) para promover alumnos al siguiente ciclo en bloque por Nivel Educativo, permitiendo transiciones semestrales (Bachillerato) y anuales (Resto de niveles), con filtros y exclusiones individuales. Valida el estado financiero y escolar bloqueando a los alumnos irregulares en estatus 'Transición Pendiente'.  
 * **Tutores:** Gestión de tutores, vinculación 1:N con alumnos y directorio fiscal opcional .  
-* **Ingresos (Cobranza):** \* **Catálogo de Conceptos de Cobro:** Soporte nativo y estructurado para: Inscripción, Arancel, Material, Libros, Uniforme y Colegiatura.  
+* **Ingresos (Cobranza):** 
+  * **Catálogo de Conceptos de Cobro:** Soporte nativo y estructurado para: Inscripción, Arancel, Material, Libros, Uniforme, Colegiatura y Conceptos Abiertos (Otros).
+  * **Caja de Cobro Unificada:** Capacidad de cobrar múltiples conceptos en una sola transacción, registrar abonos parciales a adeudos de colegiaturas y gestionar saldos a favor (crédito) generados por pagos excedentes, aplicables a cobros futuros.
   * **Expediente Digital:** Carga de comprobantes de pago adjuntos directamente al expediente del tutor (nombrados internamente por UUID para evitar colisiones).  
   * **Métodos de Pago Aceptados:** Registro estricto para Transferencia, Depósito y Tarjeta de Crédito/Débito (sistema diseñado para operar sin manejo de efectivo físico ni cheques).  
   * **Adelanto de Pagos:** Capacidad de registrar pagos adelantados aplicables a meses futuros.  
-* **Becas:** \* **Tipos de Beca Soportados:** Beca por tiempo de inscripción, Beca por calificación y Beca por hermanos.  
-* **Calificaciones:** \* Captura y módulo de **Historial Académico (Kardex)**.  
+* **Becas y Promociones:** 
+  * **Beca de Hermanos:** Descuento fijo del 30% exclusivo e independiente por nivel o grado.
+  * **Promociones Estacionales de Inscripción:** Descuentos configurables mediante una matriz dinámica de porcentajes según el Nivel Educativo y Grado escolar específico del alumno.
+* **Calificaciones:** 
+  * Captura y módulo de **Historial Académico (Kardex)**.  
   * **Periodos de Evaluación:** Parametrizados por nivel (Secundaria \= Trimestral \[3 bloques \+ final\]; Bachillerato \= Bimestral\[3 parciales\] ).  
 * **Reportes:** \* **Generación de reportes operativos:** Diario, mensual, anual, y por ciclo escolar.  
   * **Listados específicos:** Lista de deudores y Alumnos con examen pendiente por adeudo.  
@@ -65,8 +70,8 @@ La jerarquía de permisos está definida bajo el principio de menor privilegio:
 * **Bajas:** Automáticas según configuración, con posibilidad de reversión.  
 * **Configuración de Alertas SMTP:** Los umbrales de tiempo (días de anticipación) para el envío de recordatorios automáticos de pago son parametrizables por el administrador.
 * **Recargo Automático por Morosidad:** Aplicación de un recargo fijo de **$400 MXN** a la cuenta del alumno al transcurrir **5 días hábiles** de gracia posteriores a la fecha de vencimiento original.
-* **Plazo de inscripcion:**Conceptos como inscripción y materiales tienen hasta **60 dias naturales** de plazo para ser liquidados.  
-* **Beca por Promoción Temprana:** Regla automática que otorga la "Beca por tiempo de inscripción" a los tutores que liquiden el concepto de inscripción durante los meses de enero y febrero.
+* **Convenios de Pago por Rezago:** Mecanismo para consolidar adeudos vencidos de un tutor en un plan de pagos compromiso. Al registrar un convenio activo, se congela temporalmente la generación automática de nuevos recargos por morosidad ($400 MXN) en tanto se cumplan los pagos acordados.
+* **Plazo de inscripción:** Conceptos como inscripción y materiales tienen hasta **60 días naturales** de plazo para ser liquidados.  
 
 ## **4\. Requerimientos Técnicos (Blindaje y Robustez)**
 

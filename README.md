@@ -30,3 +30,21 @@ Utiliza una arquitectura "Todo en Uno" con Tauri Sidecars para ser distribuido c
    ```bash
    npm run dev:tauri
    ```
+
+## Compilación y Validación en Cascada
+
+Este proyecto cuenta con un flujo de tipado y construcción en cascada. Al realizar modificaciones en el backend o en el esquema de base de datos, debes ejecutar la validación completa para comprobar que no se rompan las importaciones o el frontend:
+
+```bash
+npm run validate
+```
+
+### Flujo de Trabajo para Modificaciones
+1. **Modificar Esquema**: Si cambias `packages/data-access/prisma/schema.prisma`, corre `npm run db:generate` para actualizar el cliente.
+2. **Backend**: Ajusta la lógica en repositorios/servicios.
+3. **Frontend**: tRPC propagará los tipos. Verifica errores de TypeScript corriendo `npm run validate`.
+4. **Sidecar de Tauri**: Si modificas el backend y vas a compilar la app de Tauri, recuerda regenerar el binario ejecutable en el backend con:
+   ```bash
+   npm run build:sidecar --workspace=@sga/back-end
+   ```
+

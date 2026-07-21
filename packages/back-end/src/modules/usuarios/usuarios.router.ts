@@ -1,153 +1,62 @@
-import { router, protectedProcedure } from '../../trpc';
-import { TRPCError } from '@trpc/server';
+import { router, protectedProcedure, hasModulePermission } from '../../trpc';
+import { z } from 'zod';
 import { 
   ListarUsuariosSchema, 
   CrearUsuarioSchema, 
   ActualizarEstadoUsuarioSchema, 
-  AsignarRolesSchema 
+  AsignarRolesSchema,
+  ActualizarPasswordSchema,
+  PermisosModuloSchema
 } from './usuarios.schemas';
+import { UsuariosService } from './usuarios.service';
 
-// TODO: Importar utilería de hash (e.g., bcrypt) si estuviese disponible. 
-// Por simplicidad, aquí simulamos que guardamos un hash (el módulo 'auth' debe tenerlo).
+const lecturaProcedure = protectedProcedure.use(hasModulePermission('Usuarios', false));
+const escrituraProcedure = protectedProcedure.use(hasModulePermission('Usuarios', true));
 
 export const usuariosRouter = router({
-  getRoles: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.prisma.rol.findMany({
-      where: { eliminadoEn: null },
-      orderBy: { nombre: 'asc' },
-    });
+  getRoles: lecturaProcedure.query(async () => {
+    return UsuariosService.getRoles();
   }),
 
-  listarUsuarios: protectedProcedure
-    .input(ListarUsuariosSchema)
-    .query(async ({ input, ctx }) => {
-      // Idealmente, se valida si el ctx.usuario tiene Rol de Admin aquí
-      const skip = (input.pagina - 1) * input.limite;
-
-      const whereClause = input.busqueda ? {
-        OR: [
-          { nombreUsuario: { contains: input.busqueda, mode: 'insensitive' as const } },
-          { nombreCompleto: { contains: input.busqueda, mode: 'insensitive' as const } },
-          { correo: { contains: input.busqueda, mode: 'insensitive' as const } },
-        ]
-      } : {};
-
-      const [total, usuarios] = await Promise.all([
-        ctx.prisma.usuario.count({ where: whereClause }),
-        ctx.prisma.usuario.findMany({
-          where: whereClause,
-          skip,
-          take: input.limite,
-          select: {
-            usuarioId: true,
-            nombreUsuario: true,
-            nombreCompleto: true,
-            correo: true,
-            activo: true,
-            roles: {
-              include: { rol: true }
-            }
-          },
-          orderBy: { usuarioId: 'desc' },
-        }),
-      ]);
-
-      return {
-        data: usuarios,
-        meta: {
-          total,
-          pagina: input.pagina,
-          limite: input.limite,
-          totalPaginas: Math.ceil(total / input.limite),
-        }
-      };
+  obtenerUsuarioDetalle: lecturaProcedure
+    .input(z.number())
+    .query(async ({ input }) => {
+      return UsuariosService.obtenerUsuarioDetalle(input);
     }),
 
-  crearUsuario: protectedProcedure
+  listarUsuarios: lecturaProcedure
+    .input(ListarUsuariosSchema)
+    .query(async ({ input }) => {
+      return UsuariosService.listarUsuarios(input);
+    }),
+
+  crearUsuario: escrituraProcedure
     .input(CrearUsuarioSchema)
     .mutation(async ({ input, ctx }) => {
-      // 1. Verificar correo / usuario único
-      const existente = await ctx.prisma.usuario.findFirst({
-        where: {
-          OR: [
-            { nombreUsuario: input.nombreUsuario },
-            { correo: input.correo },
-          ]
-        }
-      });
-
-      if (existente) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'El nombre de usuario o correo ya está registrado',
-        });
-      }
-
-      // 2. Crear usuario y asignar roles transaccionalmente
-      const nuevoUsuario = await ctx.prisma.$transaction(async (tx) => {
-        const u = await tx.usuario.create({
-          data: {
-            nombreUsuario: input.nombreUsuario,
-            nombreCompleto: input.nombreCompleto,
-            correo: input.correo,
-            telefono: input.telefono,
-            passwordHash: input.password, // TODO: Hashear con bcrypt
-            debeCambiarPwd: true,
-          }
-        });
-
-        // Asignar roles
-        const userRolesData = input.roles.map(rolId => ({
-          usuarioId: u.usuarioId,
-          rolId,
-          asignadoPor: ctx.user.usuarioId,
-        }));
-
-        await tx.usuarioRol.createMany({ data: userRolesData });
-
-        return u;
-      });
-
-      return { success: true, usuarioId: nuevoUsuario.usuarioId };
+      return UsuariosService.crearUsuario(input, (ctx as any).user.usuarioId);
     }),
 
-  actualizarEstadoUsuario: protectedProcedure
+  actualizarEstadoUsuario: escrituraProcedure
     .input(ActualizarEstadoUsuarioSchema)
     .mutation(async ({ input, ctx }) => {
-      if (input.usuarioId === ctx.user.usuarioId) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No puedes desactivar tu propia cuenta',
-        });
-      }
-
-      const actualizado = await ctx.prisma.usuario.update({
-        where: { usuarioId: input.usuarioId },
-        data: { activo: input.activo },
-      });
-
-      return { success: true, activo: actualizado.activo };
+      return UsuariosService.actualizarEstadoUsuario(input, (ctx as any).user.usuarioId);
     }),
 
-  asignarRoles: protectedProcedure
+  asignarRoles: escrituraProcedure
     .input(AsignarRolesSchema)
     .mutation(async ({ input, ctx }) => {
-      await ctx.prisma.$transaction(async (tx) => {
-        // Borrar roles actuales
-        await tx.usuarioRol.deleteMany({
-          where: { usuarioId: input.usuarioId }
-        });
-
-        // Insertar nuevos
-        const userRolesData = input.roles.map(rolId => ({
-          usuarioId: input.usuarioId,
-          rolId,
-          asignadoPor: ctx.user.usuarioId,
-        }));
-
-        await tx.usuarioRol.createMany({ data: userRolesData });
-      });
-
-      return { success: true };
+      return UsuariosService.asignarRoles(input, (ctx as any).user.usuarioId);
     }),
+
+  actualizarPasswordUsuario: escrituraProcedure
+    .input(ActualizarPasswordSchema)
+    .mutation(async ({ input }) => {
+      return UsuariosService.actualizarPasswordUsuario(input);
+    }),
+
+  sincronizarPermisosModulo: escrituraProcedure
+    .input(PermisosModuloSchema)
+    .mutation(async ({ input }) => {
+      return UsuariosService.sincronizarPermisosModulo(input);
+    })
 });

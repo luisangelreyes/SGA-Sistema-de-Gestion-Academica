@@ -1,11 +1,15 @@
-import { router, protectedProcedure } from '../../trpc';
+import { router, protectedProcedure, hasModulePermission } from '../../trpc';
 import { z } from 'zod';
 import { BecasService } from './becas.service';
 import { 
   createBecaSchema, updateBecaSchema, 
   createSolicitudBecaSchema, resolverSolicitudBecaSchema, 
-  assignBecaSchema 
+  assignBecaSchema, revokeBecaSchema, updateAsignacionSchema
 } from './becas.schema';
+
+const lecturaConfiguracion = protectedProcedure.use(hasModulePermission('Configuracion', false));
+const escrituraConfiguracion = protectedProcedure.use(hasModulePermission('Configuracion', true));
+const escrituraAlumnos = protectedProcedure.use(hasModulePermission('Alumnos', true));
 
 export const becasRouter = router({
   // --- Catálogo de Becas ---
@@ -13,15 +17,15 @@ export const becasRouter = router({
     return BecasService.getBecas();
   }),
 
-  createBeca: protectedProcedure
+  createBeca: escrituraConfiguracion
     .input(createBecaSchema)
     .mutation(({ input }) => BecasService.createBeca(input)),
 
-  updateBeca: protectedProcedure
+  updateBeca: escrituraConfiguracion
     .input(updateBecaSchema)
     .mutation(({ input }) => BecasService.updateBeca(input)),
 
-  deleteBeca: protectedProcedure
+  deleteBeca: escrituraConfiguracion
     .input(z.number().int().positive())
     .mutation(({ input }) => BecasService.deleteBeca(input)),
 
@@ -33,28 +37,49 @@ export const becasRouter = router({
     }).optional())
     .query(({ input }) => BecasService.getSolicitudes(input?.cicloId, input?.alumnoId)),
 
-  createSolicitud: protectedProcedure
+  createSolicitud: escrituraAlumnos
     .input(createSolicitudBecaSchema)
     .mutation(({ input, ctx }) => {
-      const solicitadorId = ctx.user?.usuarioId;
+      const solicitadorId = (ctx as any).user?.usuarioId;
       if (!solicitadorId) throw new Error("No user in context");
       return BecasService.createSolicitud(input, solicitadorId);
     }),
 
-  resolverSolicitud: protectedProcedure
+  resolverSolicitud: escrituraAlumnos
     .input(resolverSolicitudBecaSchema)
     .mutation(({ input, ctx }) => {
-      const resolvedorId = ctx.user?.usuarioId;
+      const resolvedorId = (ctx as any).user?.usuarioId;
       if (!resolvedorId) throw new Error("No user in context");
       return BecasService.resolverSolicitud(input, resolvedorId);
     }),
 
   // --- Asignación Directa ---
-  assignBeca: protectedProcedure
+  assignBeca: escrituraAlumnos
     .input(assignBecaSchema)
     .mutation(({ input, ctx }) => {
-      const asignadorId = ctx.user?.usuarioId;
+      const asignadorId = (ctx as any).user?.usuarioId;
       if (!asignadorId) throw new Error("No user in context");
       return BecasService.assignBeca(input, asignadorId);
+    }),
+
+  revokeBeca: escrituraAlumnos
+    .input(revokeBecaSchema)
+    .mutation(({ input, ctx }) => {
+      const retiradorId = (ctx as any).user?.usuarioId;
+      if (!retiradorId) throw new Error("No user in context");
+      return BecasService.revokeBeca(input, retiradorId);
+    }),
+
+  getAsignaciones: protectedProcedure.query(() => {
+    return BecasService.getAsignacionesActivas();
+  }),
+
+  updateAsignacion: escrituraAlumnos
+    .input(updateAsignacionSchema)
+    .mutation(({ input, ctx }) => {
+      const actualizadorId = (ctx as any).user?.usuarioId;
+      if (!actualizadorId) throw new Error("No user in context");
+      return BecasService.updateAsignacion(input, actualizadorId);
     })
 });
+

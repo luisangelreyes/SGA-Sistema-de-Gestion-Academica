@@ -1,9 +1,15 @@
 # Documentación de API - Módulo `auth`
 
-Este módulo se encarga del manejo de acceso, autenticación de usuarios y sesiones.
+Este módulo se encarga del manejo de acceso, autenticación de usuarios y sesiones del sistema.
 
-## `auth.login` (Mutation)
-Valida las credenciales del usuario, registra el intento de acceso (exitoso o fallido) y emite un token JWT si todo es correcto. Se aplican reglas de bloqueo automático si se alcanzan los 5 intentos fallidos.
+## Procedimientos
+
+### Autenticación y Sesiones
+
+---
+
+#### `auth.login` (Mutation)
+Valida las credenciales del usuario, registra el intento de acceso (exitoso o fallido) y emite un token JWT si todo es correcto. Se aplican reglas de bloqueo automático si se alcanzan los 5 intentos fallidos consecutivos en la misma IP o cuenta.
 
 - **Nivel de Acceso**: Público (`publicProcedure`)
 - **Inputs**:
@@ -34,7 +40,7 @@ Valida las credenciales del usuario, registra el intento de acceso (exitoso o fa
 
 ---
 
-## `auth.logout` (Mutation)
+#### `auth.logout` (Mutation)
 Revoca el token activo agregándolo a la lista negra (`token_revocado`) para que no pueda volver a utilizarse hasta que expire naturalmente.
 
 - **Nivel de Acceso**: Protegido (`protectedProcedure`)
@@ -51,7 +57,7 @@ Revoca el token activo agregándolo a la lista negra (`token_revocado`) para que
 
 ---
 
-## `auth.me` (Query)
+#### `auth.me` (Query)
 Permite a una aplicación cliente obtener la información del usuario autenticado actual y validar si el token sigue activo.
 
 - **Nivel de Acceso**: Protegido (`protectedProcedure`)

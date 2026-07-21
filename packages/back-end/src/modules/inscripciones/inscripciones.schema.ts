@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const createPlanPagoSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(40),
   meses: z.number().int().positive('Los meses deben ser mayor a 0'),
-  montoMensual: z.number().positive(),
+  montoMensual: z.number().nonnegative(),
   montoDiciembre: z.number().nonnegative().optional().nullable(),
   descripcion: z.string().optional().nullable(),
   activo: z.boolean().default(true)
@@ -16,10 +16,13 @@ export const updatePlanPagoSchema = createPlanPagoSchema.partial().extend({
 
 // --- Ventanas de Inscripción Temprana ---
 export const createVentanaInscripcionSchema = z.object({
-  cicloId: z.number().int().positive(),
-  becaId: z.number().int().positive(),
-  fechaInicio: z.string().datetime(),
-  fechaFin: z.string().datetime(),
+  cicloId: z.number().int().positive('Debe seleccionar un ciclo escolar'),
+  fechaInicio: z.string().datetime({ message: 'Fecha de inicio inválida' }),
+  fechaFin: z.string().datetime({ message: 'Fecha de fin inválida' }),
+  descuentoInscripcion: z.number().min(0).max(100, 'El descuento no puede superar 100%'),
+  becaId: z.number().int().positive().optional().nullable(),
+  nivelId: z.number().int().positive('Debe seleccionar un nivel educativo'),
+  gradoId: z.number().int().positive().optional().nullable(),
   activa: z.boolean().default(true)
 });
 
@@ -32,7 +35,7 @@ export const createInscripcionSchema = z.object({
   alumnoId: z.number().int().positive(),
   cicloId: z.number().int().positive(),
   grupoId: z.number().int().positive().optional().nullable(),
-  planPagoId: z.number().int().positive(),
+  gradoId: z.number().int().positive().optional().nullable(),
   fechaIngreso: z.string().datetime(),
   esIngresoTardio: z.boolean().default(false),
   estadoEnCiclo: z.string().min(1).max(20), // ej. 'INSCRITO', 'BAJA', etc.
@@ -43,10 +46,36 @@ export const updateInscripcionSchema = createInscripcionSchema.partial().extend(
   inscripcionId: z.number().int().positive()
 });
 
+export const inscribirExpressSchema = z.object({
+  alumnoId: z.number().int().positive(),
+  cicloId: z.number().int().positive(),
+  grupoId: z.number().int().positive(),
+  becaId: z.number().int().positive().optional().nullable()
+});
+
+export const asignarPlanPagoSchema = z.object({
+  inscripcionId: z.number().int().positive(),
+  planPagoId: z.number().int().positive()
+});
+
+export const quitarPlanPagoSchema = z.object({
+  inscripcionId: z.number().int().positive()
+});
+
+export const getTarifaColegiaturaSchema = z.object({
+  inscripcionId: z.number().int().positive()
+});
+
 // Export Types
 export type CreatePlanPagoInput = z.infer<typeof createPlanPagoSchema>;
 export type UpdatePlanPagoInput = z.infer<typeof updatePlanPagoSchema>;
 export type CreateVentanaInscripcionInput = z.infer<typeof createVentanaInscripcionSchema>;
 export type UpdateVentanaInscripcionInput = z.infer<typeof updateVentanaInscripcionSchema>;
+
+
 export type CreateInscripcionInput = z.infer<typeof createInscripcionSchema>;
 export type UpdateInscripcionInput = z.infer<typeof updateInscripcionSchema>;
+export type InscribirExpressInput = z.infer<typeof inscribirExpressSchema>;
+export type AsignarPlanPagoInput = z.infer<typeof asignarPlanPagoSchema>;
+export type QuitarPlanPagoInput = z.infer<typeof quitarPlanPagoSchema>;
+export type GetTarifaColegiaturaInput = z.infer<typeof getTarifaColegiaturaSchema>;

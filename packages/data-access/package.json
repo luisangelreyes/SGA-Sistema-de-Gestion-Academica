@@ -4,9 +4,10 @@
   "private": true,
   "main": "src/index.ts",
   "scripts": {
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:migrate": "powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\" && prisma migrate dev",
+    "db:generate": "powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\" && prisma generate",
+    "db:studio": "prisma studio",
+    "db:seed-demo": "ts-node src/seed-demo.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0"

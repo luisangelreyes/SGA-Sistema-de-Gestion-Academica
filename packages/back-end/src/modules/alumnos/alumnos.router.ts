@@ -1,20 +1,23 @@
-import { router, protectedProcedure } from '../../trpc';
+import { router, protectedProcedure, hasModulePermission } from '../../trpc';
 import { z } from 'zod';
 import { AlumnosService } from './alumnos.service';
 import { createAlumnoSchema, updateAlumnoSchema, linkTutorSchema, unlinkTutorSchema } from './alumnos.schema';
+
+const lectura = protectedProcedure.use(hasModulePermission('Alumnos', false));
+const escritura = protectedProcedure.use(hasModulePermission('Alumnos', true));
 
 export const alumnosRouter = router({
   /**
    * Obtener todos los alumnos
    */
-  getAll: protectedProcedure.query(() => {
+  getAll: lectura.query(() => {
     return AlumnosService.getAlumnos();
   }),
 
   /**
    * Obtener detalle de un alumno por ID
    */
-  getById: protectedProcedure
+  getById: lectura
     .input(z.number().int().positive())
     .query(({ input }) => {
       return AlumnosService.getAlumnoById(input);
@@ -23,7 +26,7 @@ export const alumnosRouter = router({
   /**
    * Crear un nuevo alumno
    */
-  create: protectedProcedure
+  create: escritura
     .input(createAlumnoSchema)
     .mutation(({ input }) => {
       return AlumnosService.createAlumno(input);
@@ -32,7 +35,7 @@ export const alumnosRouter = router({
   /**
    * Actualizar un alumno existente
    */
-  update: protectedProcedure
+  update: escritura
     .input(updateAlumnoSchema)
     .mutation(({ input }) => {
       return AlumnosService.updateAlumno(input);
@@ -41,7 +44,7 @@ export const alumnosRouter = router({
   /**
    * Realizar Soft Delete de un alumno
    */
-  delete: protectedProcedure
+  delete: escritura
     .input(z.number().int().positive())
     .mutation(({ input }) => {
       return AlumnosService.deleteAlumno(input);
@@ -50,7 +53,7 @@ export const alumnosRouter = router({
   /**
    * Vincular un tutor a un alumno
    */
-  linkTutor: protectedProcedure
+  linkTutor: escritura
     .input(linkTutorSchema)
     .mutation(({ input }) => {
       return AlumnosService.linkTutor(input);
@@ -59,7 +62,7 @@ export const alumnosRouter = router({
   /**
    * Desvincular un tutor de un alumno
    */
-  unlinkTutor: protectedProcedure
+  unlinkTutor: escritura
     .input(unlinkTutorSchema)
     .mutation(({ input }) => {
       return AlumnosService.unlinkTutor(input);

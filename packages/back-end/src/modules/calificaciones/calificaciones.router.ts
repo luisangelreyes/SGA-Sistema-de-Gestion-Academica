@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from '../../trpc';
+import { router, protectedProcedure, hasModulePermission } from '../../trpc';
 import { CalificacionesService } from './calificaciones.service';
 import { 
   getCalificacionesGrupoSchema, 
@@ -9,12 +9,15 @@ import {
   KardexSchema
 } from './calificaciones.schema';
 
+const lectura = protectedProcedure.use(hasModulePermission('Calificaciones', false));
+const escritura = protectedProcedure.use(hasModulePermission('Calificaciones', true));
+
 export const calificacionesRouter = router({
   
   /**
    * Obtiene la boleta/registro de calificaciones para un grupo (vista docente)
    */
-  getPorGrupo: protectedProcedure
+  getPorGrupo: lectura
     .input(getCalificacionesGrupoSchema)
     .query(({ input }) => {
       return CalificacionesService.getCalificacionesGrupo(input);
@@ -23,7 +26,7 @@ export const calificacionesRouter = router({
   /**
    * Obtiene el kárdex completo de un alumno (vista administrativo/tutor)
    */
-  getPorAlumno: protectedProcedure
+  getPorAlumno: lectura
     .input(getCalificacionesAlumnoSchema)
     .query(({ input }) => {
       return CalificacionesService.getCalificacionesAlumno(input);
@@ -32,10 +35,10 @@ export const calificacionesRouter = router({
   /**
    * Inserta o actualiza una calificación de un alumno
    */
-  upsert: protectedProcedure
+  upsert: escritura
     .input(upsertCalificacionSchema)
     .mutation(({ input, ctx }) => {
-      const registradorId = ctx.user?.usuarioId;
+      const registradorId = (ctx as any).user?.usuarioId;
       if (!registradorId) throw new Error("No user in context");
       return CalificacionesService.upsertCalificacion(input, registradorId);
     }),
@@ -43,7 +46,7 @@ export const calificacionesRouter = router({
   /**
    * Elimina una calificación registrada por error
    */
-  delete: protectedProcedure
+  delete: escritura
     .input(deleteCalificacionSchema)
     .mutation(({ input }) => {
       return CalificacionesService.deleteCalificacion(input);
@@ -52,62 +55,18 @@ export const calificacionesRouter = router({
   /**
    * Genera la boleta consolidada de un alumno en un ciclo escolar específico
    */
-  generarBoletaCiclo: protectedProcedure
+  generarBoletaCiclo: lectura
     .input(GenerarBoletaSchema)
-    .query(async ({ input, ctx }) => {
-      const alumno = await ctx.prisma.alumno.findUnique({
-        where: { alumnoId: input.alumnoId },
-        include: { nivel: true }
-      });
-      const ciclo = await ctx.prisma.cicloEscolar.findUnique({
-        where: { cicloId: input.cicloId }
-      });
-
-      const calificaciones = await ctx.prisma.calificacion.findMany({
-        where: { 
-          alumnoId: input.alumnoId, 
-          grupoMateria: { grupo: { cicloId: input.cicloId } } 
-        },
-        include: {
-          grupoMateria: { include: { materia: true } }
-        }
-      });
-
-      return {
-        alumno,
-        ciclo,
-        materias: calificaciones.map(c => ({
-          materia: c.grupoMateria.materia.nombre,
-          evaluacion: c.tipoEvaluacion,
-          calificacion: c.valorNumerico || c.valorCualitativo,
-        }))
-      };
+    .query(async ({ input }) => {
+      return CalificacionesService.generarBoletaCiclo(input);
     }),
 
   /**
    * Obtiene el historial académico completo de todos los ciclos
    */
-  obtenerKardexCompleto: protectedProcedure
+  obtenerKardexCompleto: lectura
     .input(KardexSchema)
-    .query(async ({ input, ctx }) => {
-      const historial = await ctx.prisma.calificacion.findMany({
-        where: { alumnoId: input.alumnoId },
-        include: {
-          grupoMateria: {
-            include: {
-              materia: true,
-              grupo: { include: { ciclo: true, nivel: true } }
-            }
-          }
-        },
-        orderBy: { grupoMateria: { grupo: { ciclo: { fechaInicio: 'desc' } } } }
-      });
-
-      return historial.map(c => ({
-        ciclo: c.grupoMateria.grupo.ciclo.nombre,
-        nivel: c.grupoMateria.grupo.nivel.nombre,
-        materia: c.grupoMateria.materia.nombre,
-        calificacion: c.valorNumerico || c.valorCualitativo,
-      }));
+    .query(async ({ input }) => {
+      return CalificacionesService.obtenerKardexCompleto(input);
     })
 });
