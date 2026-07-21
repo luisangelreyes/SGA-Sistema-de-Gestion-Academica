@@ -149,7 +149,7 @@ export class BecasService {
     return BecasRepository.getAsignacionesActivas();
   }
 
-  static async updateAsignacion(input: { asignacionId: number; becaId: number; cicloId: number }, actualizadorId: number) {
+  static async updateAsignacion(input: { asignacionId: number; becaId: number; cicloId: number }, _actualizadorId: number) {
     const asignacion = await prisma.asignacionBeca.findUnique({
       where: { asignacionId: input.asignacionId }
     });

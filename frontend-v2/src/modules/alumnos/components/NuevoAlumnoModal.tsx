@@ -54,7 +54,7 @@ export function NuevoAlumnoModal({ isOpen, onClose, onSuccess }: NuevoAlumnoModa
   const watchNivelId = watch('nivelId');
   const watchGradoId = watch('gradoId');
   const gradosFiltrados = grados?.filter(g => g.nivelId.toString() === watchNivelId);
-  const gruposFiltrados = grupos?.filter(g => g.gradoId.toString() === watchGradoId && g.nivelId.toString() === watchNivelId);
+  // const gruposFiltrados = grupos?.filter(g => g.gradoId.toString() === watchGradoId && g.nivelId.toString() === watchNivelId);
 
   useEffect(() => {
     if (isOpen) {

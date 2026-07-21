@@ -7,7 +7,7 @@ import {
   assignBecaSchema, revokeBecaSchema, updateAsignacionSchema
 } from './becas.schema';
 
-const lecturaConfiguracion = protectedProcedure.use(hasModulePermission('Configuracion', false));
+// const lecturaConfiguracion = protectedProcedure.use(hasModulePermission('Configuracion', false));
 const escrituraConfiguracion = protectedProcedure.use(hasModulePermission('Configuracion', true));
 const escrituraAlumnos = protectedProcedure.use(hasModulePermission('Alumnos', true));
 
