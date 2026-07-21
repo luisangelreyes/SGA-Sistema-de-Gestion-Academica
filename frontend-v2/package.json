@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm --prefix ../packages/data-access run db:generate",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
