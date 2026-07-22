@@ -689,7 +689,7 @@ enum EstadoAlumno {
 }
 
 enum MetodoPago {
-  EFECTIVO
+  OTRO
   DEPOSITO
   TRANSFERENCIA
   TARJETA_DEBITO
