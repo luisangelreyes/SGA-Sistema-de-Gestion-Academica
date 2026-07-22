@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { trpc } from '../../../lib/trpc';
-import { Plus, Trash2, Calendar, Percent, Tag, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Calendar, Percent, Edit2, Tag, X } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { PromocionModal } from './PromocionModal';
 
 export function ConfiguracionPromocionesTab() {
   // Queries
@@ -40,14 +41,8 @@ export function ConfiguracionPromocionesTab() {
   });
 
   // State: Ventana
-  const [editingVentanaId, setEditingVentanaId] = useState<number | null>(null);
-  const [cicloId, setCicloId] = useState('');
-  const [nivelId, setNivelId] = useState('');
-  const [gradoId, setGradoId] = useState('');
-  const [descuentoInscripcion, setDescuentoInscripcion] = useState('');
-  const [becaIdVentana, setBecaIdVentana] = useState('');
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingData, setEditingData] = useState<any>(null);
 
   // State: Beca
   const [editingBecaId, setEditingBecaId] = useState<number | null>(null);
@@ -56,56 +51,19 @@ export function ConfiguracionPromocionesTab() {
   const [porcentajeBeca, setPorcentajeBeca] = useState('');
   const [descripcion, setDescripcion] = useState('');
 
-  const handleCreateVentana = () => {
-    if (!cicloId || !nivelId || !descuentoInscripcion || !fechaInicio || !fechaFin) {
-      alert('Llena todos los campos (la beca es opcional)');
-      return;
-    }
-    const payload = {
-      cicloId: Number(cicloId),
-      nivelId: Number(nivelId),
-      gradoId: gradoId ? Number(gradoId) : undefined,
-      descuentoInscripcion: Number(descuentoInscripcion),
-      becaId: becaIdVentana ? Number(becaIdVentana) : undefined,
-      fechaInicio: new Date(fechaInicio + 'T12:00:00').toISOString(),
-      fechaFin: new Date(fechaFin + 'T12:00:00').toISOString(),
-      activa: true
-    };
-    if (editingVentanaId) {
-      updateVentana.mutate({ ventanaId: editingVentanaId, ...payload });
-      setEditingVentanaId(null);
+  const handleSaveVentana = (payload: any) => {
+    if (editingData) {
+      updateVentana.mutate({ ventanaId: editingData.ventanaId, ...payload });
     } else {
       createVentana.mutate(payload);
     }
-    setCicloId('');
-    setNivelId('');
-    setGradoId('');
-    setDescuentoInscripcion('');
-    setBecaIdVentana('');
-    setFechaInicio('');
-    setFechaFin('');
+    setIsModalOpen(false);
+    setEditingData(null);
   };
 
   const handleEditVentana = (v: any) => {
-    setEditingVentanaId(v.ventanaId);
-    setCicloId(v.cicloId.toString());
-    setNivelId(v.nivelId.toString());
-    setGradoId(v.gradoId?.toString() || '');
-    setDescuentoInscripcion(v.descuentoInscripcion.toString());
-    setBecaIdVentana(v.becaId?.toString() || '');
-    setFechaInicio(v.fechaInicio.split('T')[0]);
-    setFechaFin(v.fechaFin.split('T')[0]);
-  };
-
-  const cancelEditVentana = () => {
-    setEditingVentanaId(null);
-    setCicloId('');
-    setNivelId('');
-    setGradoId('');
-    setDescuentoInscripcion('');
-    setBecaIdVentana('');
-    setFechaInicio('');
-    setFechaFin('');
+    setEditingData(v);
+    setIsModalOpen(true);
   };
 
   const handleCreateBeca = () => {
@@ -255,82 +213,27 @@ export function ConfiguracionPromocionesTab() {
           <Calendar className="text-blue-600" />
           Reglas de Inscripción Temprana (Automáticas)
         </h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Configura ventanas de tiempo donde las inscripciones obtendrán un descuento automático según su nivel educativo.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Ciclo</label>
-            <select className="w-full p-2 border rounded-lg outline-none" value={cicloId} onChange={e => setCicloId(e.target.value)}>
-              <option value="">Selecciona...</option>
-              {ciclos?.map((c: any) => <option key={c.cicloId} value={c.cicloId}>{c.nombre}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Nivel</label>
-            <select className="w-full p-2 border rounded-lg outline-none" value={nivelId} onChange={e => { setNivelId(e.target.value); setGradoId(''); }}>
-              <option value="">Selecciona...</option>
-              {niveles?.map((n: any) => <option key={n.nivelId} value={n.nivelId}>{n.nombre}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Grado (Opcional)</label>
-            <select className="w-full p-2 border rounded-lg outline-none" value={gradoId} onChange={e => setGradoId(e.target.value)} disabled={!nivelId}>
-              <option value="">Todos los grados</option>
-              {grados?.filter((g: any) => g.nivelId === Number(nivelId)).map((g: any) => <option key={g.gradoId} value={g.gradoId}>{g.nombre}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Desc. Inscripción (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              className="w-full p-2 border rounded-lg outline-none"
-              value={descuentoInscripcion}
-              onChange={e => setDescuentoInscripcion(e.target.value)}
-              placeholder="Ej. 50"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Beca (Colegiaturas)</label>
-            <select className="w-full p-2 border rounded-lg outline-none" value={becaIdVentana} onChange={e => setBecaIdVentana(e.target.value)}>
-              <option value="">Ninguna</option>
-              {becas?.map((b: any) => <option key={b.becaId} value={b.becaId}>{b.nombreBeca} ({b.porcentaje}%)</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Vigencia Inicio</label>
-            <input type="date" className="w-full p-2 border rounded-lg outline-none" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 font-medium mb-1">Vigencia Fin</label>
-            <input type="date" className="w-full p-2 border rounded-lg outline-none" value={fechaFin} onChange={e => setFechaFin(e.target.value)} />
-          </div>
-          <div className="md:col-span-5 flex justify-end gap-2">
-            {editingVentanaId && (
-              <Button onClick={cancelEditVentana} variant="outline">
-                <X size={16} /> Cancelar
-              </Button>
-            )}
-            <Button onClick={handleCreateVentana} disabled={createVentana.isPending || updateVentana.isPending}>
-              {editingVentanaId ? <><Edit2 size={16} /> Guardar Cambios</> : <><Plus size={16} /> Agregar Promocion</>}
-            </Button>
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-gray-500">
+            Configura ventanas de tiempo donde las inscripciones obtendrán un descuento automático según su nivel o grado.
+          </p>
+          <Button onClick={() => { setEditingData(null); setIsModalOpen(true); }}>
+            <Plus size={16} /> Nueva Promoción
+          </Button>
         </div>
 
         <div className="space-y-3">
           {ventanas?.map((v: any) => (
             <div key={v.ventanaId} className="flex justify-between items-center p-4 border rounded-xl hover:bg-gray-50 transition-colors">
               <div>
-                <p className="font-bold text-gray-800">
+                <h4 className="font-bold text-gray-800 mb-1">{v.nombrePromo || 'Promoción de Inscripción'}</h4>
+                <p className="font-bold text-gray-700 mb-1">
                   <Percent size={14} className="inline mr-1 text-green-600" />
                   {v.descuentoInscripcion}% Inscripción
                   {v.beca ? ` + ${v.beca.porcentaje}% Beca Colegiatura` : ''}
                 </p>
-                <p className="text-sm text-gray-600 font-medium">
-                  Nivel: {v.nivel?.nombre} {v.grado ? `| Grado: ${v.grado.nombre}` : '| Todos los grados'} | Ciclo: {v.ciclo?.nombre}
+                <p className="text-sm text-gray-600 font-medium mb-1">
+                  Aplica a: {v.gradosAplicables?.length === grados?.length ? 'Todos los grados y niveles' : v.gradosAplicables?.map((ga: any) => `${ga.grado?.nombre} ${ga.grado?.nivel?.nombre}`).join(', ')} | Ciclo: {v.ciclo?.nombre}
                 </p>
                 <p className="text-xs text-gray-500">
                   Del {new Date(v.fechaInicio).toLocaleDateString('es-MX', { timeZone: 'UTC' })} al {new Date(v.fechaFin).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
@@ -357,6 +260,17 @@ export function ConfiguracionPromocionesTab() {
           {ventanas?.length === 0 && <p className="text-sm text-gray-500">No hay ventanas promocionales configuradas.</p>}
         </div>
       </div>
+
+      <PromocionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveVentana}
+        initialData={editingData}
+        niveles={niveles || []}
+        grados={grados || []}
+        becas={becas || []}
+        ciclos={ciclos || []}
+      />
 
     </div>
   );

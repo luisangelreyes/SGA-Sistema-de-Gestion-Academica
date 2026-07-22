@@ -34,26 +34,34 @@ export class InscripcionesService {
   }
 
   static async createVentana(input: CreateVentanaInscripcionInput) {
-    // Ya no creamos beca automática falsa, usamos becaId si se pasa, y guardamos el descuento
     return InscripcionesRepository.createVentana({
       cicloId: input.cicloId,
-      nivelId: input.nivelId,
+      nombrePromo: input.nombrePromo,
       becaId: input.becaId ?? null,
       descuentoInscripcion: input.descuentoInscripcion,
       fechaInicio: new Date(input.fechaInicio),
       fechaFin: new Date(input.fechaFin),
-      activa: input.activa
+      activa: input.activa,
+      gradosAplicables: {
+        create: input.gradosId.map((id: number) => ({ gradoId: id }))
+      }
     } as any);
   }
 
   static async updateVentana(input: UpdateVentanaInscripcionInput) {
-    const { ventanaId, fechaInicio, fechaFin, ...data } = input;
+    const { ventanaId, fechaInicio, fechaFin, gradosId, ...data } = input;
     return InscripcionesRepository.updateVentana(ventanaId, {
       ...data,
       ...(fechaInicio && { fechaInicio: new Date(fechaInicio) }),
       ...(fechaFin && { fechaFin: new Date(fechaFin) }),
+      ...(gradosId && {
+        gradosAplicables: {
+          deleteMany: {},
+          create: gradosId.map((id: number) => ({ gradoId: id }))
+        }
+      }),
       actualizadoEn: new Date()
-    });
+    } as any);
   }
 
   static async deleteVentana(ventanaId: number) {
@@ -145,24 +153,21 @@ export class InscripcionesService {
       
       // 3. Verificar si aplica Promoción / Ventana de Inscripción Temprana
       const alumnoRef = await tx.alumno.findUnique({ where: { alumnoId: input.alumnoId } });
-      const nivelIdAlumno = alumnoRef?.nivelId;
-
       const hoy = new Date();
+      const gradoIdAlumno = input.gradoId ?? alumnoRef?.gradoId ?? 0;
       const ventanaPromocional = await tx.ventanaInscripcionTemprana.findFirst({
         where: {
           cicloId: input.cicloId,
-          nivelId: nivelIdAlumno, // Validar que sea del mismo nivel
-          OR: [
-            { gradoId: input.gradoId },
-            { gradoId: null }
-          ],
           activa: true,
           eliminadoEn: null,
           fechaInicio: { lte: hoy },
-          fechaFin: { gte: hoy }
+          fechaFin: { gte: hoy },
+          gradosAplicables: {
+            some: { gradoId: gradoIdAlumno }
+          }
         },
         orderBy: {
-          gradoId: 'desc' // Preferimos la específica del grado sobre la general
+          descuentoInscripcion: 'desc'
         }
       });
 
@@ -248,21 +253,20 @@ export class InscripcionesService {
       };
 
       // 1.6 Buscar si la inscripción cayó en una Ventana Temprana para descuento de inscripción
+      const gradoIdInsc = inscripcion.gradoId ?? inscripcion.alumno.gradoId ?? 0;
       const ventana = await tx.ventanaInscripcionTemprana.findFirst({
         where: {
           cicloId: inscripcion.cicloId,
-          nivelId: inscripcion.alumno.nivelId,
-          OR: [
-            { gradoId: inscripcion.gradoId },
-            { gradoId: null }
-          ],
           activa: true,
           eliminadoEn: null,
           fechaInicio: { lte: inscripcion.fechaIngreso },
-          fechaFin: { gte: inscripcion.fechaIngreso }
+          fechaFin: { gte: inscripcion.fechaIngreso },
+          gradosAplicables: {
+            some: { gradoId: gradoIdInsc }
+          }
         },
         orderBy: {
-          gradoId: 'desc'
+          descuentoInscripcion: 'desc'
         }
       });
       const descuentoInscripcion = ventana ? Number(ventana.descuentoInscripcion) : 0;
