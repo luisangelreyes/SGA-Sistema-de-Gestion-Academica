@@ -142,7 +142,13 @@ export const hasModulePermission = (modulo: string, requireWrite: boolean = fals
   return next({ ctx });
 });
 
-// Procedimientos con seguridad RBAC
+// ─── Procedimientos con seguridad RBAC ──────────────────────────────────────
+// ADMIN: acceso total al sistema.
 export const adminProcedure = protectedProcedure.use(hasRoles(['ADMIN']));
+
+// GESTOR: gestión administrativa — alumnos, tutores, pagos, inscripciones, becas, configuración.
 export const gestorProcedure = protectedProcedure.use(hasRoles(['ADMIN', 'GESTOR']));
-export const docentProcedure = protectedProcedure.use(hasRoles(['ADMIN', 'GESTOR', 'DOCENTE']));
+
+// CONTROL_ESCOLAR: gestión académica — grupos, materias, calificaciones, boletas.
+// Lectura de expedientes de alumnos y tutores.
+export const controlEscolarProcedure = protectedProcedure.use(hasRoles(['ADMIN', 'CONTROL_ESCOLAR']));
