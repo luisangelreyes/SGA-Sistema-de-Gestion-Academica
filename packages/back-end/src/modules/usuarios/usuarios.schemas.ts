@@ -5,13 +5,15 @@ export const MODULOS_SISTEMA = [
   'Usuarios',
   'Alumnos',
   'Tutores',
+  'Inscripciones',
   'Grupos',
   'Materias',
   'Pagos',
   'Becas',
   'Reportes',
   'Configuracion',
-  'Calificaciones'
+  'Calificaciones',
+  'Boletas'
 ] as const;
 
 export type ModuloSistema = typeof MODULOS_SISTEMA[number];

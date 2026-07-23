@@ -15,6 +15,10 @@ describe('Usuarios Router (Unit)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prismaMock.logAuditoria.create.mockResolvedValue({} as any);
+    prismaMock.usuarioPermisoModulo.findUnique.mockResolvedValue({
+      activo: true,
+      nivel: 'LECTURA_Y_ESCRITURA'
+    } as any);
   });
 
   const ctxMock = {
@@ -54,13 +58,12 @@ describe('Usuarios Router (Unit)', () => {
 
       await expect(
         caller.usuarios.crearUsuario({
-          nombreUsuario: 'duplicado',
-          nombreCompleto: 'Usuario Duplicado',
-          correo: 'duplicado@test.com',
+          nombreUsuario: 'admin',
+          nombreCompleto: 'Admin Tester',
           password: 'password123',
-          roles: [1]
+          rolId: 1
         })
-      ).rejects.toThrowError(new TRPCError({ code: 'CONFLICT', message: 'El nombre de usuario o correo ya está registrado' }));
+      ).rejects.toThrowError(new TRPCError({ code: 'CONFLICT', message: 'El nombre de usuario ya está registrado' }));
     });
 
     it('debería crear el usuario y sus roles transaccionalmente', async () => {
@@ -73,13 +76,15 @@ describe('Usuarios Router (Unit)', () => {
 
       prismaMock.usuario.create.mockResolvedValue({ usuarioId: 5 } as any);
       prismaMock.usuarioRol.createMany.mockResolvedValue({ count: 1 } as any);
+      prismaMock.rol.findMany.mockResolvedValue([
+        { rolId: 2, codigo: 'GESTOR', nombre: 'Gestor' }
+      ] as any);
 
       const result = await caller.usuarios.crearUsuario({
         nombreUsuario: 'nuevo',
         nombreCompleto: 'Nuevo Usuario',
-        correo: 'nuevo@test.com',
         password: 'password123',
-        roles: [2]
+        rolId: 2
       });
 
       expect(result.success).toBe(true);
