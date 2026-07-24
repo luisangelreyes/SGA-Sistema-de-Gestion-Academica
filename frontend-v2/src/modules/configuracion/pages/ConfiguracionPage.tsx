@@ -105,7 +105,7 @@ export function ConfiguracionPage() {
 
   const handleSaveTarifas = async () => {
     if (!selectedCicloId || !niveles) return;
-    const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'];
+    const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'];
     let hasNegative = false;
     let hasInvalid = false;
     for (const n of niveles) {
@@ -410,8 +410,6 @@ export function ConfiguracionPage() {
                           <th className="py-3 font-semibold text-center">Inscripción ($)</th>
                           <th className="py-3 font-semibold text-center">Arancel ($)</th>
                           <th className="py-3 font-semibold text-center">Materiales ($)</th>
-                          <th className="py-3 font-semibold text-center">Libros ($)</th>
-                          <th className="py-3 font-semibold text-center">Uniforme ($)</th>
                           <th className="py-3 font-semibold text-center">Colegiatura ($ / Mes)</th>
                         </tr>
                       </thead>
@@ -419,7 +417,7 @@ export function ConfiguracionPage() {
                         {niveles?.map((n: any) => (
                           <tr key={n.nivelId}>
                             <td className="py-4 font-bold text-navy-800">{n.nombre}</td>
-                            {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].map((c) => (
+                            {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'].map((c) => (
                               <td key={c} className="py-4 text-center">
                                 <input
                                   type="number"
