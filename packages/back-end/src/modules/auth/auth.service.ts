@@ -93,7 +93,7 @@ export class AuthService {
       usuario: {
         id: usuario.usuarioId,
         nombre: usuario.nombreCompleto,
-        roles: usuario.roles.map(r => r.rol.nombre),
+        roles: usuario.roles.map(r => r.rol.codigo),
         debeCambiarPwd: usuario.debeCambiarPwd,
         permisosModulos: usuario.permisosModulos
       }
@@ -108,8 +108,8 @@ export class AuthService {
       id: usuario.usuarioId,
       nombre: usuario.nombreCompleto,
       name: usuario.nombreCompleto,
-      role: usuario.roles[0]?.rol?.nombre || 'Desconocido',
-      roles: usuario.roles.map(r => r.rol.nombre),
+      role: usuario.roles[0]?.rol?.codigo || 'Desconocido',
+      roles: usuario.roles.map(r => r.rol.codigo),
       debeCambiarPwd: usuario.debeCambiarPwd,
       permisosModulos: usuario.permisosModulos
     };
