@@ -40,10 +40,8 @@ model Usuario {
   asistenciasRegistradas    Asistencia[]
   calificacionesRegistradas Calificacion[]
   documentosSubidos         Documento[]
-  gruposMaterias            GrupoMateria[]
   intentosLogin             IntentoLogin[]
   logsAuditoria             LogAuditoria[]
-  materiasDocente           Materia[]              @relation("MateriaDocente")
   movimientosSaldo          MovimientoSaldo[]
   pagosRegistrados          Pago[]
   recargosModificados       Recargo[]
@@ -228,10 +226,27 @@ model Materia {
   docenteId      Int?           @map("docente_id")
   tipo           String         @default("curricular") @db.VarChar(20)
   gruposMaterias GrupoMateria[]
-  docente        Usuario?       @relation("MateriaDocente", fields: [docenteId], references: [usuarioId])
+  docente        Docente?       @relation("MateriaDocente", fields: [docenteId], references: [docenteId])
   grado          Grado?         @relation(fields: [gradoId], references: [gradoId])
 
   @@map("materia")
+}
+
+model Docente {
+  docenteId      Int            @id @default(autoincrement()) @map("docente_id")
+  nombreCompleto String         @map("nombre_completo") @db.VarChar(120)
+  correo         String?        @db.VarChar(255)
+  telefono       String?        @db.VarChar(15)
+  especialidad   String?        @db.VarChar(100)
+  activo         Boolean?       @default(true)
+  creadoEn       DateTime?      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn  DateTime?      @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  eliminadoEn    DateTime?      @map("eliminado_en") @db.Timestamptz(6)
+  
+  materias       Materia[]      @relation("MateriaDocente")
+  gruposMaterias GrupoMateria[] @relation("GrupoMateriaDocente")
+
+  @@map("docente")
 }
 
 model GrupoMateria {
@@ -241,7 +256,7 @@ model GrupoMateria {
   docenteId      Int?           @map("docente_id")
   asistencias    Asistencia[]
   calificaciones Calificacion[]
-  docente        Usuario?       @relation(fields: [docenteId], references: [usuarioId])
+  docente        Docente?       @relation("GrupoMateriaDocente", fields: [docenteId], references: [docenteId])
   grupo          Grupo          @relation(fields: [grupoId], references: [grupoId])
   materia        Materia        @relation(fields: [materiaId], references: [materiaId])
 

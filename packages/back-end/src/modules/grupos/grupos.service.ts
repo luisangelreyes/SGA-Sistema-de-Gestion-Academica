@@ -795,26 +795,4 @@ export class GruposService {
     });
   }
 
-  static async getDocentes() {
-    return prisma.usuario.findMany({
-      where: {
-        eliminadoEn: null,
-        activo: true,
-        roles: {
-          some: {
-            rol: { codigo: 'DOCENTE' },
-            eliminadoEn: null
-          }
-        }
-      },
-      select: {
-        usuarioId: true,
-        nombreCompleto: true
-      },
-      orderBy: {
-        nombreCompleto: 'asc'
-      }
-    });
-  }
 }
-

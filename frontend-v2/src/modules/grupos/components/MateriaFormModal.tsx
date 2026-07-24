@@ -29,7 +29,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
 
   const { data: grados } = trpc.grupos.getGrados.useQuery(undefined, { enabled: isOpen });
   const { data: niveles } = trpc.grupos.getNiveles.useQuery(undefined, { enabled: isOpen });
-  const { data: docentes } = trpc.grupos.getDocentes.useQuery(undefined, { enabled: isOpen });
+  const { data: docentes } = trpc.docentes.getActivos.useQuery(undefined, { enabled: isOpen });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -51,7 +51,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
   useEffect(() => {
     if (isOpen && docentes) {
       if (initialData) {
-        const doc = docentes.find(d => d.usuarioId === initialData.docenteId);
+        const doc = docentes.find(d => d.docenteId === initialData.docenteId);
         setSearchQuery(doc ? doc.nombreCompleto : '');
         reset({
           nombre: initialData.nombre,
@@ -191,9 +191,8 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
                     const val = e.target.value;
                     setSearchQuery(val);
                     setShowDropdown(true);
-                    if (!val) {
-                      field.onChange('');
-                    }
+                    const doc = docentes?.find(d => d.nombreCompleto.toLowerCase() === val.toLowerCase());
+                    field.onChange(doc ? String(doc.docenteId) : '');
                   }}
                   onFocus={() => setShowDropdown(true)}
                   onBlur={() => {
@@ -221,9 +220,9 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
                   ) : (
                     filteredDocentes.map(d => (
                       <div
-                        key={d.usuarioId}
+                        key={d.docenteId}
                         onMouseDown={() => {
-                          field.onChange(String(d.usuarioId));
+                          field.onChange(String(d.docenteId));
                           setSearchQuery(d.nombreCompleto);
                           setShowDropdown(false);
                         }}

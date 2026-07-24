@@ -40,7 +40,6 @@ export const gruposRouter = router({
 
   // --- Materias ---
   getMaterias: lecturaMaterias.query(() => GruposService.getMaterias()),
-  getDocentes: lecturaMaterias.query(() => GruposService.getDocentes()),
   createMateria: escrituraMaterias.input(createMateriaSchema).mutation(({ input }) => GruposService.createMateria(input)),
   updateMateria: escrituraMaterias.input(updateMateriaSchema).mutation(({ input }) => GruposService.updateMateria(input)),
   deleteMateria: escrituraMaterias.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteMateria(input)),

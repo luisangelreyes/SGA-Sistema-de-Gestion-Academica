@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, LogOut, Settings,
-  BookOpen, Layers, Shield, ClipboardList, GraduationCap, Award,
+  BookOpen, Layers, Shield, ClipboardList, GraduationCap, Award, UserCheck,
 } from 'lucide-react';
 
 // ─── Mapa legible de roles ────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ const NAV_ADMINISTRACION = [
 
 const NAV_CONTROL_ESCOLAR = [
   { to: '/alumnos',        icon: Users,          label: 'Expedientes',    modulo: 'Alumnos' },
+  { to: '/docentes',       icon: UserCheck,      label: 'Docentes',       modulo: 'Grupos' },
   { to: '/grupos',         icon: Layers,         label: 'Grupos',         modulo: 'Grupos' },
   { to: '/materias',       icon: BookOpen,       label: 'Materias',       modulo: 'Materias' },
   { to: '/calificaciones', icon: GraduationCap,  label: 'Calificaciones', modulo: 'Calificaciones' },
