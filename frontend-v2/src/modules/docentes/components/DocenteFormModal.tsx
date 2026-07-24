@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { trpc } from '../../../lib/trpc';
+import toast from 'react-hot-toast';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -52,14 +53,22 @@ export function DocenteFormModal({ isOpen, onClose, docenteId, initialData }: Pr
   const createMutation = trpc.docentes.create.useMutation({
     onSuccess: () => {
       utils.docentes.getAll.invalidate();
+      toast.success('Docente guardado exitosamente');
       onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Error al guardar docente');
     }
   });
 
   const updateMutation = trpc.docentes.update.useMutation({
     onSuccess: () => {
       utils.docentes.getAll.invalidate();
+      toast.success('Docente actualizado exitosamente');
       onClose();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Error al actualizar docente');
     }
   });
 
@@ -75,7 +84,16 @@ export function DocenteFormModal({ isOpen, onClose, docenteId, initialData }: Pr
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar Docente' : 'Nuevo Docente'}>
-      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4">
+      <form 
+        onSubmit={handleSubmit(
+          onSubmit as any, 
+          (errors) => {
+            console.error("Validation errors:", errors);
+            toast.error("Por favor, revisa los campos en rojo.");
+          }
+        )} 
+        className="space-y-4"
+      >
         <Input
           label="Nombre Completo *"
           {...register('nombreCompleto')}

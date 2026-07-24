@@ -122,21 +122,30 @@ export const hasModulePermission = (modulo: string, requireWrite: boolean = fals
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No autenticado' });
   }
 
-  const permisoModulo = await ctx.prisma.usuarioPermisoModulo.findUnique({
-    where: {
-      usuarioId_modulo: {
-        usuarioId: user.usuarioId,
-        modulo: modulo
-      }
-    }
+  // Verificamos si es ADMIN (los ADMIN tienen acceso a todos los módulos)
+  const userRoles = await ctx.prisma.usuarioRol.findMany({
+    where: { usuarioId: user.usuarioId, activo: true, eliminadoEn: null },
+    include: { rol: true }
   });
+  const isADMIN = userRoles.some((ur: any) => ur.rol.codigo === 'ADMIN');
 
-  if (!permisoModulo || !permisoModulo.activo || permisoModulo.nivel === NivelPermiso.DENEGADO) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: `Acceso denegado al módulo: ${modulo}` });
-  }
+  if (!isADMIN) {
+    const permisoModulo = await ctx.prisma.usuarioPermisoModulo.findUnique({
+      where: {
+        usuarioId_modulo: {
+          usuarioId: user.usuarioId,
+          modulo: modulo
+        }
+      }
+    });
 
-  if (requireWrite && permisoModulo.nivel !== NivelPermiso.LECTURA_Y_ESCRITURA) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: `No tiene permisos de escritura en el módulo: ${modulo}` });
+    if (!permisoModulo || !permisoModulo.activo || permisoModulo.nivel === NivelPermiso.DENEGADO) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: `Acceso denegado al módulo: ${modulo}` });
+    }
+
+    if (requireWrite && permisoModulo.nivel !== NivelPermiso.LECTURA_Y_ESCRITURA) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: `No tiene permisos de escritura en el módulo: ${modulo}` });
+    }
   }
 
   return next({ ctx });
