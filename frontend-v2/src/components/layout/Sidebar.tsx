@@ -46,19 +46,20 @@ export function Sidebar() {
     logout();
   };
 
+  const roleCode = user?.role || user?.roles?.[0] || '';
+  const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
+
   const hasPermiso = (modulo: string | null) => {
     if (modulo === null) return true;
+    if (roleCode === 'ADMIN') return true;
     if (!user?.permisosModulos) return false;
     const p = user.permisosModulos.find((m: any) => m.modulo === modulo);
     return p && p.nivel !== 'DENEGADO';
   };
 
-  const roleCode = user?.role || user?.roles?.[0] || '';
-  const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
-
   const showAdminSection   = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_ADMINISTRACION.some(i => hasPermiso(i.modulo));
   const showEscolarSection = (roleCode === 'ADMIN' || roleCode === 'CONTROL_ESCOLAR') && NAV_CONTROL_ESCOLAR.some(i => hasPermiso(i.modulo));
-  const showSistemaSection = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_SISTEMA.some(i => hasPermiso(i.modulo));
+  const showSistemaSection = (roleCode === 'ADMIN') && NAV_SISTEMA.some(i => hasPermiso(i.modulo));
 
   const NavItem = ({ item }: { item: { to: string; icon: React.ElementType; label: string; modulo: string | null } }) => (
     <NavLink

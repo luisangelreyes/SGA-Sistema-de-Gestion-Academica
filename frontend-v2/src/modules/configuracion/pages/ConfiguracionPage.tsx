@@ -82,7 +82,7 @@ export function ConfiguracionPage() {
       const valores: Record<string, string> = {};
       const existen: Record<string, number> = {};
       niveles.forEach((n: any) => {
-        ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].forEach((concepto) => {
+        ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'].forEach((concepto) => {
           valores[`${n.nivelId}_${concepto}`] = '';
         });
       });

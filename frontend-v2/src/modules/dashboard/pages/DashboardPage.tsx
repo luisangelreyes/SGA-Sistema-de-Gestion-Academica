@@ -11,15 +11,18 @@ export function DashboardPage() {
   const isDocente = role === 'CONTROL ESCOLAR' || role === 'CONTROL_ESCOLAR';
   const isAdmin = role === 'ADMIN' || role === 'ADMINISTRADOR';
 
-  // Obtener datos vía tRPC
-  const { data: metricasInscripcion, isLoading: loadingInscripcion } = trpc.dashboard.obtenerMetricasInscripcion.useQuery(undefined, { enabled: isAdmin });
-  const { data: kpisFinancieros, isLoading: loadingKpis } = trpc.dashboard.obtenerKpisFinancieros.useQuery(undefined, { enabled: isAdmin });
-  const { data: ingresosChartData, isLoading: loadingChart } = trpc.dashboard.obtenerIngresosUltimos7Dias.useQuery(undefined, { enabled: isAdmin });
-  const { data: ultimosPagos, isLoading: loadingPagos } = trpc.dashboard.obtenerUltimosPagos.useQuery(undefined, { enabled: isAdmin });
-  const { data: topDeudores, isLoading: loadingTopDeudores } = trpc.dashboard.obtenerTopDeudores.useQuery(undefined, { enabled: isAdmin });
+  const isGestor = role === 'GESTOR' || role === 'GESTIÓN ADMINISTRATIVA';
+  const isFinanciero = isAdmin || isGestor;
 
-  const { data: alumnos, isLoading: loadingAlumnosList } = trpc.alumnos.getAll.useQuery(undefined, { enabled: isDocente });
-  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(undefined, { enabled: isDocente });
+  // Obtener datos vía tRPC
+  const { data: metricasInscripcion, isLoading: loadingInscripcion } = trpc.dashboard.obtenerMetricasInscripcion.useQuery(undefined, { enabled: true });
+  const { data: kpisFinancieros, isLoading: loadingKpis } = trpc.dashboard.obtenerKpisFinancieros.useQuery(undefined, { enabled: isFinanciero });
+  const { data: ingresosChartData, isLoading: loadingChart } = trpc.dashboard.obtenerIngresosUltimos7Dias.useQuery(undefined, { enabled: isFinanciero });
+  const { data: ultimosPagos, isLoading: loadingPagos } = trpc.dashboard.obtenerUltimosPagos.useQuery(undefined, { enabled: isFinanciero });
+  const { data: topDeudores, isLoading: loadingTopDeudores } = trpc.dashboard.obtenerTopDeudores.useQuery(undefined, { enabled: isFinanciero });
+
+  const { data: alumnos, isLoading: loadingAlumnosList } = trpc.alumnos.getAll.useQuery(undefined, { enabled: isDocente || isAdmin });
+  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(undefined, { enabled: isDocente || isAdmin });
 
   const loading = loadingInscripcion || loadingKpis || loadingChart || loadingPagos || loadingTopDeudores || loadingAlumnosList || loadingGrupos;
 
@@ -165,13 +168,12 @@ export function DashboardPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[280px]">
             <div className="flex items-center gap-2 mb-6">
               <Layers className="text-indigo-500" size={18} />
-              <h3 className="font-bold text-sm text-gray-800">Grupos con mayor matrícula</h3>
+              <h3 className="font-bold text-sm text-gray-800">Grupos Pendientes de Calificar</h3>
             </div>
             <div className="flex-1 space-y-0 divide-y divide-gray-100">
               {grupos && (grupos as any[]).filter(g => (g.alumnosInscritos || 0) > 0).length > 0 ? (
                 (grupos as any[])
                 .filter(g => (g.alumnosInscritos || 0) > 0)
-                .sort((a, b) => (b.alumnosInscritos || 0) - (a.alumnosInscritos || 0))
                 .slice(0, 5).map((g, i) => (
                   <div key={i} className="flex justify-between items-center py-3">
                     <div className="w-2/3">
@@ -179,17 +181,17 @@ export function DashboardPage() {
                         {g.grado?.numero}° {g.nombre} - {g.nivel?.nombre}
                       </p>
                       <p className="text-[10px] text-gray-500 truncate">
-                        {g.materias?.length || 0} materias asignadas
+                        Evaluaciones trimestrales pendientes
                       </p>
                     </div>
-                    <p className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md w-1/4 text-center">
-                      {g.alumnosInscritos} inscritos
+                    <p className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md w-1/4 text-center">
+                      Requiere atención
                     </p>
                   </div>
                 ))
               ) : (
                 <div className="flex-1 flex items-center justify-center min-h-[180px]">
-                  <p className="text-gray-400 text-xs">No hay grupos con alumnos inscritos.</p>
+                  <p className="text-gray-400 text-xs">Todos los grupos están al corriente.</p>
                 </div>
               )}
             </div>

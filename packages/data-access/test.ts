@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { const grupos = await prisma.grupo.findMany({ include: { materias: { include: { materia: true } } } }); console.dir(grupos, {depth: null}); } main();  

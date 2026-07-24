@@ -300,6 +300,25 @@ export class GruposService {
       clave 
     });
 
+    // Cascade to existing groups of this Grado
+    if (gradoId) {
+      const gruposGrado = await prisma.grupo.findMany({
+        where: { gradoId, eliminadoEn: null }
+      });
+      for (const g of gruposGrado) {
+        // Only create if we haven't already for this specific grupoId
+        if (!grupoId || g.grupoId !== grupoId) {
+          await prisma.grupoMateria.create({
+            data: {
+              grupoId: g.grupoId,
+              materiaId: materia.materiaId,
+              docenteId: data.docenteId || null
+            }
+          });
+        }
+      }
+    }
+
     if (grupoId) {
       await prisma.grupoMateria.create({
         data: {
@@ -435,7 +454,24 @@ export class GruposService {
       }
     }
 
-    return GruposRepository.createGrupo(input);
+    const nuevoGrupo = await GruposRepository.createGrupo(input);
+
+    // Heredar las materias que ya estén asignadas al grado
+    const materiasDelGrado = await prisma.materia.findMany({
+      where: { gradoId: input.gradoId, eliminadoEn: null }
+    });
+
+    for (const mat of materiasDelGrado) {
+      await prisma.grupoMateria.create({
+        data: {
+          grupoId: nuevoGrupo.grupoId,
+          materiaId: mat.materiaId,
+          docenteId: mat.docenteId || null
+        }
+      });
+    }
+
+    return nuevoGrupo;
   }
 
   static async updateGrupo(input: UpdateGrupoInput) {
