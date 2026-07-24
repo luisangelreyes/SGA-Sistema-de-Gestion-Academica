@@ -165,16 +165,13 @@ export function DashboardPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[280px]">
             <div className="flex items-center gap-2 mb-6">
               <Layers className="text-indigo-500" size={18} />
-              <h3 className="font-bold text-sm text-gray-800">Grupos con más disponibilidad</h3>
+              <h3 className="font-bold text-sm text-gray-800">Grupos con mayor matrícula</h3>
             </div>
             <div className="flex-1 space-y-0 divide-y divide-gray-100">
-              {grupos && (grupos as any[]).filter(g => (g.cupoMaximo || 0) - (g.alumnosInscritos || 0) > 0).length > 0 ? (
-                (grupos as any[]).map(g => ({
-                  ...g,
-                  disponible: (g.cupoMaximo || 0) - (g.alumnosInscritos || 0)
-                }))
-                .filter(g => g.disponible > 0)
-                .sort((a, b) => b.disponible - a.disponible)
+              {grupos && (grupos as any[]).filter(g => (g.alumnosInscritos || 0) > 0).length > 0 ? (
+                (grupos as any[])
+                .filter(g => (g.alumnosInscritos || 0) > 0)
+                .sort((a, b) => (b.alumnosInscritos || 0) - (a.alumnosInscritos || 0))
                 .slice(0, 5).map((g, i) => (
                   <div key={i} className="flex justify-between items-center py-3">
                     <div className="w-2/3">
@@ -182,17 +179,17 @@ export function DashboardPage() {
                         {g.grado?.numero}° {g.nombre} - {g.nivel?.nombre}
                       </p>
                       <p className="text-[10px] text-gray-500 truncate">
-                        {g.alumnosInscritos || 0} inscritos de {g.cupoMaximo || 0} max.
+                        {g.materias?.length || 0} materias asignadas
                       </p>
                     </div>
-                    <p className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-md w-1/4 text-center">
-                      {g.disponible} lugares
+                    <p className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md w-1/4 text-center">
+                      {g.alumnosInscritos} inscritos
                     </p>
                   </div>
                 ))
               ) : (
                 <div className="flex-1 flex items-center justify-center min-h-[180px]">
-                  <p className="text-gray-400 text-xs">No hay grupos con lugares disponibles.</p>
+                  <p className="text-gray-400 text-xs">No hay grupos con alumnos inscritos.</p>
                 </div>
               )}
             </div>

@@ -1,8 +1,8 @@
-import { router, gestorProcedure } from '../../trpc';
+import { router, gestorProcedure, protectedProcedure } from '../../trpc';
 import { DashboardService } from './dashboard.service';
 
 export const dashboardRouter = router({
-  obtenerMetricasInscripcion: gestorProcedure
+  obtenerMetricasInscripcion: protectedProcedure
     .query(async () => {
       return DashboardService.obtenerMetricasInscripcion();
     }),
