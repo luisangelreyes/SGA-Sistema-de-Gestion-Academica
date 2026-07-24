@@ -816,5 +816,55 @@ export class GruposService {
       }
     });
   }
+
+  static async createDocente(nombreCompleto: string) {
+    return prisma.$transaction(async (tx) => {
+      // Find or Reactivate DOCENTE role
+      let rolDocente = await tx.rol.findUnique({ where: { codigo: 'DOCENTE' } });
+      if (!rolDocente) {
+        rolDocente = await tx.rol.create({
+          data: {
+            codigo: 'DOCENTE',
+            nombre: 'Docente',
+            descripcion: 'Rol para profesores titulares de materia',
+          }
+        });
+      } else if (rolDocente.eliminadoEn !== null) {
+        rolDocente = await tx.rol.update({
+          where: { codigo: 'DOCENTE' },
+          data: { eliminadoEn: null }
+        });
+      }
+
+      // Generate random username and password
+      const uniqueSuffix = Math.random().toString(36).substring(2, 8);
+      const nombreUsuario = `docente_${uniqueSuffix}`;
+      const randomPassword = Math.random().toString(36).substring(2, 12);
+      
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.default.hash(randomPassword, 10);
+
+      // Create Usuario
+      const usuario = await tx.usuario.create({
+        data: {
+          nombreCompleto,
+          nombreUsuario,
+          passwordHash,
+          debeCambiarPwd: true,
+          activo: true,
+        }
+      });
+
+      // Assign Role
+      await tx.usuarioRol.create({
+        data: {
+          usuarioId: usuario.usuarioId,
+          rolId: rolDocente.rolId
+        }
+      });
+
+      return { success: true, usuarioId: usuario.usuarioId, nombreCompleto };
+    });
+  }
 }
 

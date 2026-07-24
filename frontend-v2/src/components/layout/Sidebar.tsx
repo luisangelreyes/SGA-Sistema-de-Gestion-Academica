@@ -59,7 +59,7 @@ export function Sidebar() {
 
   const showAdminSection   = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_ADMINISTRACION.some(i => hasPermiso(i.modulo));
   const showEscolarSection = (roleCode === 'ADMIN' || roleCode === 'CONTROL_ESCOLAR') && NAV_CONTROL_ESCOLAR.some(i => hasPermiso(i.modulo));
-  const showSistemaSection = (roleCode === 'ADMIN') && NAV_SISTEMA.some(i => hasPermiso(i.modulo));
+  const showSistemaSection = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_SISTEMA.some(i => hasPermiso(i.modulo));
 
   const NavItem = ({ item }: { item: { to: string; icon: React.ElementType; label: string; modulo: string | null } }) => (
     <NavLink
@@ -121,11 +121,11 @@ export function Sidebar() {
           </>
         )}
 
-        {/* Sección: Sistema (ADMIN únicamente) */}
+        {/* Sección: Sistema (ADMIN y GESTOR) */}
         {showSistemaSection && (
           <>
             <SectionLabel label="Sistema" />
-            {NAV_SISTEMA.filter(i => hasPermiso(i.modulo)).map(item => (
+            {NAV_SISTEMA.filter(i => hasPermiso(i.modulo) && (i.modulo !== 'Usuarios' || roleCode === 'ADMIN')).map(item => (
               <NavItem key={item.to} item={item} />
             ))}
           </>
