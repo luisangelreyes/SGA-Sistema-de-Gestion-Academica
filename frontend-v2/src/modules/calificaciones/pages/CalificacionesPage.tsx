@@ -147,6 +147,7 @@ export function CalificacionesPage() {
   const [grupoSeleccionadoId, setGrupoSeleccionadoId] = useState<number | null>(null);
   const [materiaSelecionadaId, setMateriaSeleccionadaId] = useState<number | null>(null); // grupoMateriaId
   const [, setSavedTick] = useState(0); // forzar refetch de calificaciones
+  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(undefined);
 
   const gruposFiltrados = (grupos as Grupo[] | undefined)?.filter(g => {
     const n = g.nivel?.nombre?.toUpperCase() || '';
