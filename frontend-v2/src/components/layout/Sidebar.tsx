@@ -56,9 +56,9 @@ export function Sidebar() {
   const roleCode = user?.role || user?.roles?.[0] || '';
   const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
 
-  const showAdminSection   = NAV_ADMINISTRACION.some(i => hasPermiso(i.modulo));
-  const showEscolarSection = NAV_CONTROL_ESCOLAR.some(i => hasPermiso(i.modulo));
-  const showSistemaSection = NAV_SISTEMA.some(i => hasPermiso(i.modulo));
+  const showAdminSection   = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_ADMINISTRACION.some(i => hasPermiso(i.modulo));
+  const showEscolarSection = (roleCode === 'ADMIN' || roleCode === 'CONTROL_ESCOLAR') && NAV_CONTROL_ESCOLAR.some(i => hasPermiso(i.modulo));
+  const showSistemaSection = (roleCode === 'ADMIN' || roleCode === 'GESTOR') && NAV_SISTEMA.some(i => hasPermiso(i.modulo));
 
   const NavItem = ({ item }: { item: { to: string; icon: React.ElementType; label: string; modulo: string | null } }) => (
     <NavLink
