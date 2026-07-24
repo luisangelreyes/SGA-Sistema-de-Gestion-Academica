@@ -3,6 +3,8 @@ import { FileText, Download, Search, ArrowLeft } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { trpc } from '../../../lib/trpc';
 import { parseSpanishName } from '../../../utils/nameParser';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -238,7 +240,26 @@ async function exportarBoletaPDF(
   doc.setFontSize(7);
   doc.text('FECHA DE EXPEDICIÓN', dateX + 17, y + 32, { align: 'center' });
 
-  doc.save(`Boleta_${nivel}_${matricula || alumno.alumnoId}.pdf`);
+  const fileName = `Boleta_${nivel}_${matricula || alumno.alumnoId}.pdf`;
+
+  if ('__TAURI__' in window) {
+    try {
+      const filePath = await save({
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+        defaultPath: fileName,
+      });
+
+      if (filePath) {
+        const pdfArrayBuffer = doc.output('arraybuffer');
+        await writeFile(filePath, new Uint8Array(pdfArrayBuffer));
+      }
+    } catch (error) {
+      console.error('Error al guardar archivo nativo en Tauri:', error);
+      doc.save(fileName); // Fallback
+    }
+  } else {
+    doc.save(fileName);
+  }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────

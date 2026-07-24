@@ -15,6 +15,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-query": "^4.44.0",
+    "@tauri-apps/api": "~2.0.0-rc",
+    "@tauri-apps/plugin-dialog": "~2.0.0-rc",
+    "@tauri-apps/plugin-fs": "~2.0.0-rc",
     "@trpc/client": "^10.45.4",
     "@trpc/react-query": "^10.45.4",
     "html2pdf.js": "^0.14.0",

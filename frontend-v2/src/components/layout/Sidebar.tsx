@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, LogOut, Settings,
@@ -41,7 +41,6 @@ const NAV_SISTEMA = [
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
