@@ -30,5 +30,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('auth_token');
     set({ user: null, token: null, isAuthenticated: false });
+    if (typeof window !== 'undefined' && window.location.pathname !== '/auth/login') {
+      window.location.replace('/auth/login');
+    }
   },
 }));

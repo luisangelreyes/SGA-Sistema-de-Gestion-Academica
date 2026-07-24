@@ -45,7 +45,6 @@ export function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login');
   };
 
   const hasPermiso = (modulo: string | null) => {
