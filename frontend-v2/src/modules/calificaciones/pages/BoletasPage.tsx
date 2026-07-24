@@ -257,7 +257,7 @@ export function BoletasPage() {
     { enabled: !!alumnoSeleccionado && !!cicloSeleccionadoId }
   );
 
-  const nivelesDisponibles = ['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'BACHILLERATO'];
+  const nivelesDisponibles = ['PRIMARIA', 'SECUNDARIA'];
 
   // Agrupar calificaciones por materia → T1, T2, T3 según periodoId
   const calificacionesFilas: CalificacionFila[] = (() => {
@@ -285,6 +285,9 @@ export function BoletasPage() {
   })();
 
   const resultados = ((alumnos ?? []) as AlumnoResumen[]).filter((al) => {
+    const n = al.nivel?.nombre?.toUpperCase() || '';
+    if (!n.includes('PRIMARIA') && !n.includes('SECUNDARIA')) return false;
+
     const q = busqueda.trim().toLowerCase();
     const matchQ = !q || al.nombreCompleto.toLowerCase().includes(q) || (al.matricula?.toLowerCase().includes(q) ?? false);
     const matchN = !filtroNivel || (al.nivel?.nombre?.toUpperCase() === filtroNivel);

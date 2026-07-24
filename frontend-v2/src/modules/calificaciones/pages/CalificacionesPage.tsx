@@ -148,9 +148,12 @@ export function CalificacionesPage() {
   const [materiaSelecionadaId, setMateriaSeleccionadaId] = useState<number | null>(null); // grupoMateriaId
   const [, setSavedTick] = useState(0); // forzar refetch de calificaciones
 
-  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(undefined);
+  const gruposFiltrados = (grupos as Grupo[] | undefined)?.filter(g => {
+    const n = g.nivel?.nombre?.toUpperCase() || '';
+    return n.includes('PRIMARIA') || n.includes('SECUNDARIA');
+  });
 
-  const grupoActual: Grupo | undefined = (grupos as Grupo[] | undefined)?.find(
+  const grupoActual: Grupo | undefined = gruposFiltrados?.find(
     (g) => g.grupoId === grupoSeleccionadoId
   );
 
@@ -240,7 +243,7 @@ export function CalificacionesPage() {
               {loadingGrupos ? (
                 <option disabled>Cargando grupos...</option>
               ) : (
-                (grupos as Grupo[] | undefined)?.map((g) => (
+                gruposFiltrados?.map((g) => (
                   <option key={g.grupoId} value={g.grupoId}>
                     {g.grado.numero}° {g.nombre} {g.nivel.nombre.toUpperCase()} ({g.ciclo.nombre})
                   </option>

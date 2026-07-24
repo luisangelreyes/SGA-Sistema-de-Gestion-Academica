@@ -8,7 +8,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const role = user?.role?.toUpperCase() || '';
-  const isDocente = role == 'DOCENTE';
+  const isDocente = role == 'CONTROL_ESCOLAR';
   const isAdmin = role === 'ADMIN' || role === 'ADMINISTRADOR';
 
   // Obtener datos vía tRPC

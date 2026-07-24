@@ -109,7 +109,7 @@ describe('DashboardPage Component', () => {
   });
 
   it('debería renderizar la vista de Docente limitando la información financiera', () => {
-    mockUser = { role: 'DOCENTE' };
+    mockUser = { role: 'CONTROL_ESCOLAR' };
 
     render(
       <BrowserRouter>
