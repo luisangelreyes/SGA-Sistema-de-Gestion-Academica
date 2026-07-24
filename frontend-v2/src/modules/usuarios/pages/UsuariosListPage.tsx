@@ -8,7 +8,6 @@ import { Badge } from '../../../components/ui/Badge';
 import { Spinner } from '../../../components/ui/Spinner';
 import { RolesModal } from '../components/RolesModal';
 import { UsuarioCrearModal } from '../components/UsuarioCrearModal';
-import { DocenteCrearModal } from '../components/DocenteCrearModal';
 
 type UsuarioRow = {
   usuarioId: number;
@@ -28,7 +27,6 @@ export function UsuariosListPage() {
 
   const [rolesModalOpen, setRolesModalOpen] = useState(false);
   const [crearModalOpen, setCrearModalOpen] = useState(false);
-  const [crearDocenteModalOpen, setCrearDocenteModalOpen] = useState(false);
   const [selectedUserForRoles, setSelectedUserForRoles] = useState<{ id: number, nombre: string, roles: number[] } | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,22 +113,13 @@ export function UsuariosListPage() {
           <h1 className="text-2xl font-bold text-navy-800">Usuarios del Sistema</h1>
           <p className="text-sm text-gray-500 mt-1">Gestiona el acceso y permisos del personal.</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setCrearDocenteModalOpen(true)}
-            leftIcon={<Plus size={18} />}
-          >
-            Nuevo Docente
-          </Button>
-          <Button
-            variant="cta"
-            onClick={() => setCrearModalOpen(true)}
-            leftIcon={<Plus size={18} />}
-          >
-            Nuevo Usuario
-          </Button>
-        </div>
+        <Button
+          variant="cta"
+          onClick={() => setCrearModalOpen(true)}
+          leftIcon={<Plus size={18} />}
+        >
+          Nuevo Usuario
+        </Button>
       </div>
 
       {/* Filtros */}
@@ -161,7 +150,7 @@ export function UsuariosListPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="todos">Todos los roles</option>
-            {roles?.filter((rol: any) => ['Administrador', 'Gestor Administrativo', 'Control Escolar', 'Docente'].includes(rol.nombre)).map((rol: any) => (
+            {roles?.filter((rol: any) => ['Administrador', 'Gestor Administrativo', 'Control Escolar'].includes(rol.nombre)).map((rol: any) => (
               <option key={rol.rolId} value={rol.rolId.toString()}>{rol.nombre}</option>
             ))}
           </select>
@@ -213,11 +202,6 @@ export function UsuariosListPage() {
       <UsuarioCrearModal
         isOpen={crearModalOpen}
         onClose={() => setCrearModalOpen(false)}
-        onSuccess={() => refetch()}
-      />
-      <DocenteCrearModal
-        isOpen={crearDocenteModalOpen}
-        onClose={() => setCrearDocenteModalOpen(false)}
         onSuccess={() => refetch()}
       />
     </div>
