@@ -188,8 +188,17 @@ export function ExpedienteAlumnoPage() {
           <ChevronLeft size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-800">{alumno.nombreCompleto}</h1>
-          <p className="text-gray-500">Matrícula: {alumno.matricula || 'Sin matrícula'}</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-800">{alumno.nombreCompleto}</h1>
+            {alumno.estado === 'ACTIVO' ? (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">Activo</span>
+            ) : alumno.estado.includes('BAJA') ? (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{alumno.estado.replace('_', ' ')}</span>
+            ) : (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{alumno.estado.replace('_', ' ')}</span>
+            )}
+          </div>
+          <p className="text-gray-500 mt-1">Matrícula: {alumno.matricula || 'Sin matrícula'}</p>
         </div>
       </div>
 
@@ -225,6 +234,18 @@ export function ExpedienteAlumnoPage() {
               <p className="text-sm text-gray-500 mb-1">Nivel Educativo</p>
               <p className="font-medium text-gray-900">{alumno.nivel?.nombre || '-'}</p>
             </div>
+            {alumno.estado.includes('BAJA') && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Fecha de Baja</p>
+                  <p className="font-medium text-gray-900">{alumno.fechaBaja ? formatFecha(alumno.fechaBaja) : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Motivo de Baja</p>
+                  <p className="font-medium text-gray-900">{alumno.motivoBaja || '-'}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -12,6 +12,9 @@ const editarAlumnoSchema = z.object({
   matricula: z.string().min(1, 'Obligatorio'),
   curp: z.string().length(18, 'Debe ser de 18 caracteres').optional().or(z.literal('')),
   nivelId: z.string().min(1, 'Obligatorio'),
+  estado: z.enum(['ACTIVO', 'BAJA_DEFINITIVA', 'BAJA_TEMPORAL', 'EGRESADO', 'TRANSICION_PENDIENTE']),
+  fechaBaja: z.string().optional().nullable(),
+  motivoBaja: z.string().optional().nullable(),
   // Campos extraídos del diseño pero que se ignorarán al enviar si el back no los requiere
   gradoId: z.string().optional(),
   seccionId: z.string().optional(),
@@ -40,6 +43,9 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
       matricula: '',
       curp: '',
       nivelId: '',
+      estado: 'ACTIVO',
+      fechaBaja: '',
+      motivoBaja: '',
       gradoId: '',
       seccionId: '',
       planPagoId: ''
@@ -57,6 +63,7 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
 
   const watchNivelId = watch('nivelId');
   const watchGradoId = watch('gradoId');
+  const watchEstado = watch('estado');
   const gradosFiltrados = grados?.filter(g => g.nivelId.toString() === watchNivelId);
   // const gruposFiltrados = grupos?.filter(g => g.gradoId.toString() === watchGradoId && g.nivelId.toString() === watchNivelId);
 
@@ -71,6 +78,9 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
         matricula: alumno.matricula || '',
         curp: alumno.curp || '',
         nivelId: alumno.nivelId?.toString() || '',
+        estado: alumno.estado || 'ACTIVO',
+        fechaBaja: alumno.fechaBaja ? new Date(alumno.fechaBaja).toISOString().split('T')[0] : '',
+        motivoBaja: alumno.motivoBaja || '',
         gradoId: inscripcion?.gradoId?.toString() || '',
         seccionId: inscripcion?.grupoId?.toString() || '',
         planPagoId: inscripcion?.planPagoId?.toString() || ''
@@ -94,6 +104,11 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
         fechaNacimiento: new Date(data.fechaNacimiento).toISOString(),
         sexo: data.sexo,
         nivelId: parseInt(data.nivelId, 10),
+        estado: data.estado,
+        fechaBaja: (data.estado === 'BAJA_TEMPORAL' || data.estado === 'BAJA_DEFINITIVA') && data.fechaBaja 
+          ? new Date(data.fechaBaja).toISOString() : undefined,
+        motivoBaja: (data.estado === 'BAJA_TEMPORAL' || data.estado === 'BAJA_DEFINITIVA') 
+          ? data.motivoBaja : undefined,
         gradoId: data.gradoId ? parseInt(data.gradoId, 10) : undefined,
         grupoId: data.seccionId ? parseInt(data.seccionId, 10) : undefined,
         planPagoId: data.planPagoId ? parseInt(data.planPagoId, 10) : undefined
@@ -241,6 +256,49 @@ export function EditarAlumnoModal({ isOpen, onClose, alumno }: EditarAlumnoModal
                       <option key={g.grupoId} value={g.grupoId.toString()}>{g.nombre}</option>
                     ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-6 border-t border-gray-100">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2 text-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 block"></span>
+                Estado del Alumno
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Estado <span className="text-red-500">*</span></label>
+                  <select
+                    {...register('estado')}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 outline-none text-sm bg-white"
+                  >
+                    <option value="ACTIVO">ACTIVO</option>
+                    <option value="BAJA_TEMPORAL">BAJA TEMPORAL</option>
+                    <option value="BAJA_DEFINITIVA">BAJA DEFINITIVA</option>
+                    <option value="EGRESADO">EGRESADO</option>
+                    <option value="TRANSICION_PENDIENTE">TRANSICION PENDIENTE</option>
+                  </select>
+                </div>
+                {(watchEstado === 'BAJA_TEMPORAL' || watchEstado === 'BAJA_DEFINITIVA') && (
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Fecha de Baja</label>
+                    <input
+                      type="date"
+                      {...register('fechaBaja')}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 outline-none text-sm bg-white"
+                    />
+                  </div>
+                )}
+                {(watchEstado === 'BAJA_TEMPORAL' || watchEstado === 'BAJA_DEFINITIVA') && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-600 mb-1">Motivo de Baja</label>
+                    <input
+                      type="text"
+                      {...register('motivoBaja')}
+                      placeholder="Ej. Cambio de ciudad, motivos personales..."
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 outline-none text-sm bg-white"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

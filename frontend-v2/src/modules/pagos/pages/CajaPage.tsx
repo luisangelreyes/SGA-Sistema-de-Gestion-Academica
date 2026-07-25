@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { trpc } from '../../../lib/trpc';
-import { Search, User, FileText, AlertCircle, PlusCircle, CheckSquare, Square, Edit3 } from 'lucide-react';
+import { Search, User, FileText, AlertCircle, PlusCircle, CheckSquare, Square, Edit3, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TicketCheckout } from '../components/TicketCheckout';
 import { NuevoCargoModal } from '../components/NuevoCargoModal';
@@ -8,6 +8,7 @@ import { EditarPagoModal } from '../components/EditarPagoModal';
 
 export function CajaPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAlumno, setSelectedAlumno] = useState<any>(null);
   const [selectedAlumnoId, setSelectedAlumnoId] = useState<number | null>(null);
   const [selectedTutorId, setSelectedTutorId] = useState<number | null>(null);
 
@@ -63,8 +64,9 @@ export function CajaPage() {
   );
 
   // Al seleccionar un alumno
-  const handleSelectAlumno = (alumnoId: number, tutorId?: number | null) => {
-    setSelectedAlumnoId(alumnoId);
+  const handleSelectAlumno = (alumno: any, tutorId?: number | null) => {
+    setSelectedAlumnoId(alumno.alumnoId);
+    setSelectedAlumno(alumno);
     setSelectedTutorId(tutorId || null);
     setSearchTerm('');
     setAdeudosSeleccionados([]);
@@ -94,8 +96,6 @@ export function CajaPage() {
     setAdeudosSeleccionados([]);
     refetchAdeudos(); // Recargar el estado de cuenta
   };
-
-  const alumnoSeleccionado = alumnos.find((a: any) => a.alumnoId === selectedAlumnoId);
 
   return (
     <div className="h-full flex flex-col p-6 max-w-7xl mx-auto w-full gap-6">
@@ -127,7 +127,7 @@ export function CajaPage() {
                 alumnosFiltrados.map((alumno: any) => (
                   <button
                     key={alumno.alumnoId}
-                    onClick={() => handleSelectAlumno(alumno.alumnoId, alumno.tutoresAlumnos?.[0]?.tutorId)}
+                    onClick={() => handleSelectAlumno(alumno, alumno.tutoresAlumnos?.[0]?.tutorId)}
                     className="w-full text-left p-4 hover:bg-slate-50 border-b border-slate-50 flex items-center gap-4 transition-colors"
                   >
                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
@@ -157,21 +157,28 @@ export function CajaPage() {
           <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setSelectedAlumnoId(null)}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  title="Volver a la vista general"
+                >
+                  <ArrowLeft size={20} />
+                </button>
                 <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
                   <User size={24} />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800 text-lg leading-tight truncate max-w-[300px]" title={alumnoSeleccionado?.nombreCompleto}>
-                    {alumnoSeleccionado?.nombreCompleto || 'Cargando alumno...'}
+                  <h2 className="font-bold text-slate-800 text-lg leading-tight truncate max-w-[300px]" title={selectedAlumno?.nombreCompleto}>
+                    {selectedAlumno?.nombreCompleto || 'Alumno Seleccionado'}
                   </h2>
                   <p className="text-sm text-slate-500 font-medium mt-0.5">
-                    {alumnoSeleccionado?.nivel?.nombre || 'Sin Nivel'} • {alumnoSeleccionado?.grado?.nombre || 'Sin Grado'}
+                    {selectedAlumno?.nivel?.nombre || 'Sin Nivel'} • {selectedAlumno?.grado?.nombre || 'Sin Grado'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  const cicloExtraId = alumnoSeleccionado?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId;
+                  const cicloExtraId = selectedAlumno?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId;
                   if (!cicloExtraId) {
                     toast.error('El alumno seleccionado no tiene un ciclo escolar activo ni adeudos previos. No se puede crear un cargo extra.');
                     return;
@@ -392,7 +399,7 @@ export function CajaPage() {
             isOpen={isCargoModalOpen}
             onClose={() => setIsCargoModalOpen(false)}
             alumnoId={selectedAlumnoId!}
-            cicloId={alumnoSeleccionado?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId}
+            cicloId={selectedAlumno?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId}
           />
 
           <EditarPagoModal
