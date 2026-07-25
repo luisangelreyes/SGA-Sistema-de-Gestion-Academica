@@ -10,6 +10,7 @@ export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle
   const [isIdleWarning, setIsIdleWarning] = useState(false);
   const [remainingTime, setRemainingTime] = useState(warningTimeMs / 1000);
 
+  const isIdleWarningRef = useRef(false);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -23,13 +24,14 @@ export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle
   const resetTimer = useCallback(() => {
     // Si ya estamos en advertencia, la interacción normal NO la quita automáticamente,
     // el usuario debe dar clic explícitamente en el botón del modal para cerrarla.
-    if (isIdleWarning) return;
+    if (isIdleWarningRef.current) return;
 
     clearTimers();
     setRemainingTime(warningTimeMs / 1000);
 
     // Iniciar temporizador principal de inactividad
     idleTimerRef.current = setTimeout(() => {
+      isIdleWarningRef.current = true;
       setIsIdleWarning(true);
       
       // Iniciar cuenta regresiva
@@ -37,6 +39,7 @@ export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle
         setRemainingTime((prev) => {
           if (prev <= 1) {
             clearTimers();
+            isIdleWarningRef.current = false;
             setIsIdleWarning(false);
             onIdle();
             return 0;
@@ -45,10 +48,11 @@ export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle
         });
       }, 1000);
     }, idleTimeMs);
-  }, [clearTimers, idleTimeMs, isIdleWarning, onIdle, warningTimeMs]);
+  }, [clearTimers, idleTimeMs, onIdle, warningTimeMs]);
 
   // Función explícita para que el usuario mantenga la sesión desde el modal
   const keepAlive = useCallback(() => {
+    isIdleWarningRef.current = false;
     setIsIdleWarning(false);
     resetTimer();
   }, [resetTimer]);
