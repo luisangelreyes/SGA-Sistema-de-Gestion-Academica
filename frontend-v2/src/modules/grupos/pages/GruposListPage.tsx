@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { trpc } from '../../../lib/trpc';
 import { Button } from '../../../components/ui/Button';
+import { toast } from 'react-hot-toast';
 import { GrupoFormModal } from '../components/GrupoFormModal';
 import { AsignarMateriaModal } from '../components/AsignarMateriaModal';
 
@@ -49,7 +50,12 @@ export function GruposListPage() {
   // --- Mutations ---
   const unassignMateriaMutation = trpc.grupos.updateMateria.useMutation({
     onSuccess: async () => {
-      await utils.grupos.getMaterias.invalidate();
+      await utils.grupos.getMaterias.refetch();
+      toast.success('Materia desasignada con éxito');
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error('Error al desasignar materia');
     }
   });
 
