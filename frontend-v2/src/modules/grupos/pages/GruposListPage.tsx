@@ -49,13 +49,28 @@ export function GruposListPage() {
 
   // --- Mutations ---
   const unassignMateriaMutation = trpc.grupos.updateMateria.useMutation({
-    onSuccess: async () => {
-      await utils.grupos.getMaterias.refetch();
+    onMutate: async (variables) => {
+      await utils.grupos.getMaterias.cancel();
+      const previousMaterias = utils.grupos.getMaterias.getData();
+      if (previousMaterias) {
+        utils.grupos.getMaterias.setData(undefined, 
+          previousMaterias.map(m => m.materiaId === variables.materiaId ? { ...m, gradoId: null } : m)
+        );
+      }
+      return { previousMaterias };
+    },
+    onSuccess: () => {
       toast.success('Materia desasignada con éxito');
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       console.error(error);
+      if (context?.previousMaterias) {
+        utils.grupos.getMaterias.setData(undefined, context.previousMaterias);
+      }
       toast.error(error.message || 'Error al desasignar materia');
+    },
+    onSettled: () => {
+      utils.grupos.getMaterias.invalidate();
     }
   });
 
