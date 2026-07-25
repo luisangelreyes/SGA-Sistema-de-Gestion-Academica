@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { trpc } from '../../../lib/trpc';
 import { Button } from '../../../components/ui/Button';
-import { toast } from 'react-hot-toast';
 import { GrupoFormModal } from '../components/GrupoFormModal';
 import { AsignarMateriaModal } from '../components/AsignarMateriaModal';
 
@@ -49,35 +48,15 @@ export function GruposListPage() {
 
   // --- Mutations ---
   const unassignMateriaMutation = trpc.grupos.updateMateria.useMutation({
-    onMutate: async (variables) => {
-      await utils.grupos.getMaterias.cancel();
-      const previousMaterias = utils.grupos.getMaterias.getData();
-      if (previousMaterias) {
-        utils.grupos.getMaterias.setData(undefined, 
-          previousMaterias.map(m => m.materiaId === variables.materiaId ? { ...m, gradoId: null } : m)
-        );
-      }
-      return { previousMaterias };
-    },
     onSuccess: () => {
-      toast.success('Materia desasignada con éxito');
-    },
-    onError: (error, _variables, context) => {
-      console.error(error);
-      if (context?.previousMaterias) {
-        utils.grupos.getMaterias.setData(undefined, context.previousMaterias);
-      }
-      toast.error(error.message || 'Error al desasignar materia');
-    },
-    onSettled: () => {
       utils.grupos.getMaterias.invalidate();
     }
   });
 
   const deleteGrupoMutation = trpc.grupos.deleteGrupo.useMutation({
-    onSuccess: async () => {
-      await utils.grupos.getGrupos.invalidate();
-      await utils.inscripciones.getInscripciones.invalidate();
+    onSuccess: () => {
+      utils.grupos.getGrupos.invalidate();
+      utils.inscripciones.getInscripciones.invalidate();
     }
   });
 

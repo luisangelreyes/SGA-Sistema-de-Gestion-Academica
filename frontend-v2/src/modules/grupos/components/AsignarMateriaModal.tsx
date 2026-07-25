@@ -48,9 +48,9 @@ export function AsignarMateriaModal({ isOpen, onClose, gradoId, onSuccess }: Pro
   }, [isOpen, reset]);
 
   const updateMateriaMutation = trpc.grupos.updateMateria.useMutation({
-    onSuccess: async () => {
-      await utils.grupos.getMaterias.invalidate();
-      await utils.grupos.getGrupos.invalidate();
+    onSuccess: () => {
+      utils.grupos.getMaterias.invalidate();
+      utils.grupos.getGrupos.invalidate();
       if (onSuccess) onSuccess();
       onClose();
     }
