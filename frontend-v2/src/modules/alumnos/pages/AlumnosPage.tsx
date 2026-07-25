@@ -6,6 +6,7 @@ import { NuevoAlumnoModal } from '../../alumnos/components/NuevoAlumnoModal';
 import { NuevoTutorModal } from '../../alumnos/components/NuevoTutorModal';
 import { VincularTutorModal } from '../../alumnos/components/VincularTutorModal';
 import { EditarAlumnoModal } from '../../alumnos/components/EditarAlumnoModal';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 // Helpers to rank levels for sorting
 const nivelRanking: Record<string, number> = {
@@ -18,6 +19,8 @@ const nivelRanking: Record<string, number> = {
 export function AlumnosPage() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
+  const user = useAuthStore(state => state.user);
+  const puedeEscribir = user?.permisosModulos?.some(p => p.modulo === 'Alumnos' && p.nivel === 'ESCRITURA') ?? false;
   const { data: alumnos, isLoading, refetch } = trpc.alumnos.getAll.useQuery();
   const deleteAlumnoMutation = trpc.alumnos.delete.useMutation();
 
@@ -123,12 +126,14 @@ export function AlumnosPage() {
         <div>
           <h2 className="text-3xl font-bold text-[#001429]">Directorio Escolar</h2>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#001429] text-white font-semibold rounded-xl hover:bg-[#002952] transition-colors shadow-lg shadow-blue-900/20 cursor-pointer"
-        >
-          <Plus size={18} /> Nuevo alumno
-        </button>
+        {puedeEscribir && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#001429] text-white font-semibold rounded-xl hover:bg-[#002952] transition-colors shadow-lg shadow-blue-900/20 cursor-pointer"
+          >
+            <Plus size={18} /> Nuevo alumno
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden min-h-[600px]">
