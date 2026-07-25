@@ -3,6 +3,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import React, { useEffect } from 'react';
 import { trpc } from '../lib/trpc';
 import { Loader2 } from 'lucide-react';
+import { useIdleTimeout } from '../hooks/useIdleTimeout';
+import { SessionTimeoutModal } from '../components/ui/SessionTimeoutModal';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, token, login, logout } = useAuthStore();
@@ -11,6 +13,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     enabled: isAuthenticated && !user, // Solo ejecutar si estamos autenticados pero perdimos el usuario en memoria (ej. reload)
     retry: false
   });
+
+  // Tiempos para producción: 30 minutos inactividad, 60 segundos cuenta regresiva
+  const { isIdleWarning, remainingTime, keepAlive } = useIdleTimeout(
+    30 * 60 * 1000, 
+    60 * 1000, 
+    () => logout()
+  );
 
   useEffect(() => {
     if (data && token) {
@@ -33,5 +42,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <SessionTimeoutModal 
+        isOpen={isIdleWarning} 
+        remainingSeconds={remainingTime} 
+        onKeepAlive={keepAlive} 
+        onLogout={logout} 
+      />
+    </>
+  );
 }
