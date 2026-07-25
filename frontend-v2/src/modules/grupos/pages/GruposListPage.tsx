@@ -55,7 +55,7 @@ export function GruposListPage() {
     },
     onError: (error) => {
       console.error(error);
-      toast.error('Error al desasignar materia');
+      toast.error(error.message || 'Error al desasignar materia');
     }
   });
 
