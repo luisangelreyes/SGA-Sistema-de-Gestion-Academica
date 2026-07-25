@@ -44,7 +44,33 @@ export class PagosService {
   }
 
   static async updateAdeudo(input: UpdateCalendarioPagoInput) {
-    const { calendarioPagoId, fechaVencimiento, ...data } = input;
+    const { calendarioPagoId, fechaVencimiento, montoOriginal, ...data } = input;
+    
+    if (montoOriginal !== undefined) {
+      const adeudoActual = await PagosRepository.getAdeudoById(calendarioPagoId);
+      if (!adeudoActual) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Adeudo no encontrado' });
+      }
+      
+      const nuevoSaldo = Number(montoOriginal) + Number(adeudoActual.montoRecargo) - Number(adeudoActual.montoPagado);
+      
+      if (nuevoSaldo < 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'El nuevo monto no puede ser menor a lo que ya se ha pagado.'
+        });
+      }
+      
+      return PagosRepository.updateAdeudo(calendarioPagoId, {
+        ...data,
+        montoOriginal,
+        saldoPendiente: nuevoSaldo,
+        estadoCobro: nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE',
+        ...(fechaVencimiento && { fechaVencimiento: new Date(fechaVencimiento) }),
+        actualizadoEn: new Date()
+      });
+    }
+
     return PagosRepository.updateAdeudo(calendarioPagoId, {
       ...data,
       ...(fechaVencimiento && { fechaVencimiento: new Date(fechaVencimiento) }),

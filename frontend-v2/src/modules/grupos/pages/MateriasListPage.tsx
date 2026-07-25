@@ -259,7 +259,7 @@ export function MateriasListPage() {
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
                           m.tipo === 'curricular' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                          m.tipo === 'taller' ? 'bg-orange-50 text-orange-700 border border-orange-100' :
+                          m.tipo === 'club' ? 'bg-orange-50 text-orange-700 border border-orange-100' :
                           'bg-purple-50 text-purple-700 border border-purple-100'
                         }`}>
                           {m.tipo === 'extracurricular' ? 'Extra' : m.tipo}

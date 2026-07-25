@@ -45,7 +45,7 @@ export const gruposRouter = router({
   deleteMateria: escrituraMaterias.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteMateria(input)),
 
   // --- Grupos ---
-  getGrupos: lectura
+  getGrupos: protectedProcedure
     .input(z.object({ cicloId: z.number().int().positive().optional() }).optional())
     .query(({ input }) => GruposService.getGrupos(input?.cicloId)),
   createGrupo: escritura.input(createGrupoSchema).mutation(({ input }) => GruposService.createGrupo(input)),

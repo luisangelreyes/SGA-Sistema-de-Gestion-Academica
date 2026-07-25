@@ -20,7 +20,7 @@ export function AlumnosPage() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const user = useAuthStore(state => state.user);
-  const puedeEscribir = user?.permisosModulos?.some(p => p.modulo === 'Alumnos' && p.nivel === 'ESCRITURA') ?? false;
+  const puedeEscribir = user?.permisosModulos?.some(p => p.modulo === 'Alumnos' && p.nivel === 'LECTURA_Y_ESCRITURA') ?? false;
   const { data: alumnos, isLoading, refetch } = trpc.alumnos.getAll.useQuery();
   const deleteAlumnoMutation = trpc.alumnos.delete.useMutation();
 

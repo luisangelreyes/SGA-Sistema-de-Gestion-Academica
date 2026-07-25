@@ -44,7 +44,7 @@ export const createMateriaSchema = z.object({
   clave: z.string().max(20).optional(),
   gradoId: z.number().int().positive().optional().nullable(),
   grupoId: z.number().int().positive().optional().nullable(),
-  tipo: z.enum(['curricular', 'extracurricular', 'taller']).optional(),
+  tipo: z.enum(['curricular', 'extracurricular', 'club']).optional(),
   docenteId: z.number().int().positive().optional().nullable()
 });
 

@@ -207,7 +207,7 @@ export function GruposListPage() {
                         <div className="flex items-center gap-3">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             mat.tipo === 'curricular' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                            mat.tipo === 'taller' ? 'bg-orange-50 text-orange-700 border border-orange-100' :
+                            mat.tipo === 'club' ? 'bg-orange-50 text-orange-700 border border-orange-100' :
                             'bg-purple-50 text-purple-700 border border-purple-100'
                           }`}>
                             {mat.tipo === 'extracurricular' ? 'Extra' : mat.tipo}

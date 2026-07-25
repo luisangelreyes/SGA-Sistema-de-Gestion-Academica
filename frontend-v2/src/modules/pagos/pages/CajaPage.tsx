@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { trpc } from '../../../lib/trpc';
-import { Search, User, FileText, AlertCircle, PlusCircle, CheckSquare, Square } from 'lucide-react';
+import { Search, User, FileText, AlertCircle, PlusCircle, CheckSquare, Square, Edit3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TicketCheckout } from '../components/TicketCheckout';
 import { NuevoCargoModal } from '../components/NuevoCargoModal';
+import { EditarPagoModal } from '../components/EditarPagoModal';
 
 export function CajaPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +13,7 @@ export function CajaPage() {
 
   const [adeudosSeleccionados, setAdeudosSeleccionados] = useState<any[]>([]);
   const [isCargoModalOpen, setIsCargoModalOpen] = useState(false);
+  const [pagoAEditar, setPagoAEditar] = useState<any>(null);
 
   // Queries para Dashboard de Caja
   const { data: topDeudores = [] } = trpc.dashboard.obtenerTopDeudores.useQuery(undefined, { enabled: !selectedAlumnoId });
@@ -224,8 +226,20 @@ export function CajaPage() {
                             {adeudo.concepto}
                             {isVencido && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-md">Vencido</span>}
                           </div>
-                          <div className="text-sm text-slate-500 mt-1">
-                            Vence: {new Date(adeudo.fechaVencimiento).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
+                          <div className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                            <span>Vence: {new Date(adeudo.fechaVencimiento).toLocaleDateString('es-MX', { timeZone: 'UTC' })}</span>
+                            {!isPagado && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPagoAEditar(adeudo);
+                                }}
+                                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                title="Editar Pago"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -373,12 +387,21 @@ export function CajaPage() {
 
       {/* Modal de Cargo */}
       {selectedAlumnoId && (
-        <NuevoCargoModal
-          isOpen={isCargoModalOpen}
-          onClose={() => setIsCargoModalOpen(false)}
-          alumnoId={selectedAlumnoId}
-          cicloId={alumnoSeleccionado?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId || 0}
-        />
+        <>
+          <NuevoCargoModal
+            isOpen={isCargoModalOpen}
+            onClose={() => setIsCargoModalOpen(false)}
+            alumnoId={selectedAlumnoId!}
+            cicloId={alumnoSeleccionado?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId}
+          />
+
+          <EditarPagoModal
+            isOpen={!!pagoAEditar}
+            onClose={() => setPagoAEditar(null)}
+            pagoData={pagoAEditar}
+            alumnoId={selectedAlumnoId!}
+          />
+        </>
       )}
     </div>
   );

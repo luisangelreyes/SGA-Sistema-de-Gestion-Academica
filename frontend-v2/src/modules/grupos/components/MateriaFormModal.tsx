@@ -10,7 +10,7 @@ import { Button } from '../../../components/ui/Button';
 const schema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido').max(80),
   gradoId: z.string().optional().nullable(),
-  tipo: z.enum(['curricular', 'extracurricular', 'taller']),
+  tipo: z.enum(['curricular', 'extracurricular', 'club']),
   docenteId: z.string().optional().nullable(),
 });
 
@@ -126,7 +126,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Tipo de Materia</label>
               <div className="flex gap-2 mt-1">
-                {(['curricular', 'extracurricular', 'taller'] as const).map(tipo => {
+                {(['curricular', 'extracurricular', 'club'] as const).map(tipo => {
                   const isSelected = field.value === tipo;
                   return (
                     <button
