@@ -356,6 +356,23 @@ export class GruposService {
         where: { materiaId, grupoId }
       });
       if (!existRelation) {
+        // Validar dependencias antes de eliminar relaciones anteriores
+        const dependencias = await prisma.grupoMateria.findFirst({
+          where: {
+            materiaId,
+            OR: [
+              { calificaciones: { some: {} } },
+              { asistencias: { some: {} } }
+            ]
+          }
+        });
+        if (dependencias) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'No se puede modificar la asignación porque ya tiene calificaciones o asistencias registradas.'
+          });
+        }
+
         // Eliminar relaciones anteriores
         await prisma.grupoMateria.deleteMany({
           where: { materiaId }
@@ -375,6 +392,23 @@ export class GruposService {
         });
       }
     } else if (grupoId === null || gradoId === null) {
+      // Validar dependencias
+      const dependencias = await prisma.grupoMateria.findFirst({
+        where: {
+          materiaId,
+          OR: [
+            { calificaciones: { some: {} } },
+            { asistencias: { some: {} } }
+          ]
+        }
+      });
+      if (dependencias) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No se puede desasignar la materia porque ya tiene calificaciones o asistencias registradas.'
+        });
+      }
+
       await prisma.grupoMateria.deleteMany({
         where: { materiaId }
       });
@@ -489,6 +523,23 @@ export class GruposService {
   }
 
   static async unassignMateriaFromGrupo(input: UnassignMateriaGrupoInput) {
+    // Validar dependencias
+    const dependencias = await prisma.grupoMateria.findFirst({
+      where: {
+        grupoMateriaId: input.grupoMateriaId,
+        OR: [
+          { calificaciones: { some: {} } },
+          { asistencias: { some: {} } }
+        ]
+      }
+    });
+    if (dependencias) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'No se puede remover la materia del grupo porque ya tiene calificaciones o asistencias registradas.'
+      });
+    }
+
     return GruposRepository.unassignMateriaFromGrupo(input.grupoMateriaId);
   }
 
