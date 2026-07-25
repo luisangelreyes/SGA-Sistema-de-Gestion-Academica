@@ -37,7 +37,7 @@ export function MateriasListPage() {
 
   // --- Mutations ---
   const deleteMateriaMutation = trpc.grupos.deleteMateria.useMutation({
-    onSuccess: () => utils.grupos.getMaterias.invalidate()
+    onSuccess: async () => await utils.grupos.getMaterias.invalidate()
   });
 
   // --- Handlers ---

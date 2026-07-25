@@ -68,15 +68,15 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
   }, [isOpen, initialData, reset, docentes]);
 
   const createMutation = trpc.grupos.createMateria.useMutation({
-    onSuccess: () => {
-      utils.grupos.getMaterias.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getMaterias.invalidate();
       onClose();
     }
   });
 
   const updateMutation = trpc.grupos.updateMateria.useMutation({
-    onSuccess: () => {
-      utils.grupos.getMaterias.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getMaterias.invalidate();
       onClose();
     }
   });

@@ -70,15 +70,15 @@ export function GrupoFormModal({ isOpen, onClose, grupoId, initialData, defaultC
   }, [isOpen, initialData, reset, defaultCicloId, defaultNivelId, defaultGradoId]);
 
   const createMutation = trpc.grupos.createGrupo.useMutation({
-    onSuccess: () => {
-      utils.grupos.getGrupos.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getGrupos.invalidate();
       onClose();
     }
   });
 
   const updateMutation = trpc.grupos.updateGrupo.useMutation({
-    onSuccess: () => {
-      utils.grupos.getGrupos.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getGrupos.invalidate();
       onClose();
     }
   });

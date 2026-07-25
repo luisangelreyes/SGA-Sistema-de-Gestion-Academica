@@ -50,8 +50,8 @@ export function InicializarGruposModal({ isOpen, onClose, cicloId }: Props) {
   };
 
   const initMutation = trpc.grupos.inicializarGruposSeleccionados.useMutation({
-    onSuccess: () => {
-      utils.grupos.getGrupos.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getGrupos.invalidate();
       onClose();
     }
   });

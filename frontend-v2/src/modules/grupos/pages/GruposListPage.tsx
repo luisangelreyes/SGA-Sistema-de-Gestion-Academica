@@ -48,15 +48,15 @@ export function GruposListPage() {
 
   // --- Mutations ---
   const unassignMateriaMutation = trpc.grupos.updateMateria.useMutation({
-    onSuccess: () => {
-      utils.grupos.getMaterias.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getMaterias.invalidate();
     }
   });
 
   const deleteGrupoMutation = trpc.grupos.deleteGrupo.useMutation({
-    onSuccess: () => {
-      utils.grupos.getGrupos.invalidate();
-      utils.inscripciones.getInscripciones.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getGrupos.invalidate();
+      await utils.inscripciones.getInscripciones.invalidate();
     }
   });
 
