@@ -62,7 +62,7 @@ export function GruposListPage() {
     onSuccess: () => {
       toast.success('Materia desasignada con éxito');
     },
-    onError: (error, variables, context) => {
+    onError: (error, _variables, context) => {
       console.error(error);
       if (context?.previousMaterias) {
         utils.grupos.getMaterias.setData(undefined, context.previousMaterias);
