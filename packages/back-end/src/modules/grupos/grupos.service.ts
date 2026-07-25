@@ -336,6 +336,12 @@ export class GruposService {
     const { materiaId, grupoId, ...data } = input;
 
     let gradoId = data.gradoId;
+    
+    const materiaActual = await prisma.materia.findUnique({ where: { materiaId } });
+    if (!materiaActual) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Materia no encontrada' });
+    }
+
     if (grupoId) {
       const grupo = await prisma.grupo.findUnique({
         where: { grupoId, eliminadoEn: null }
@@ -346,20 +352,24 @@ export class GruposService {
     }
 
     if (grupoId === null || (gradoId === null && input.gradoId === null)) {
-      const uso = await prisma.grupoMateria.findFirst({
-        where: {
-          materiaId,
-          OR: [
-            { asistencias: { some: {} } },
-            { calificaciones: { some: {} } }
-          ]
-        }
-      });
-      if (uso) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No se puede desasignar la materia porque ya tiene calificaciones o asistencias registradas.'
+      // Validar uso SÓLO en los grupos del grado actual (para proteger el historial)
+      if (materiaActual.gradoId) {
+        const usoActual = await prisma.grupoMateria.findFirst({
+          where: {
+            materiaId,
+            grupo: { gradoId: materiaActual.gradoId },
+            OR: [
+              { asistencias: { some: {} } },
+              { calificaciones: { some: {} } }
+            ]
+          }
         });
+        if (usoActual) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'No se puede desasignar la materia porque ya tiene calificaciones o asistencias en los grupos de este grado.'
+          });
+        }
       }
     }
 
@@ -376,7 +386,7 @@ export class GruposService {
       if (!existRelation) {
         // Eliminar relaciones anteriores
         await prisma.grupoMateria.deleteMany({
-          where: { materiaId }
+          where: { materiaId, grupo: { gradoId: materiaActual.gradoId } }
         });
         
         await prisma.grupoMateria.create({
@@ -392,10 +402,13 @@ export class GruposService {
           data: { docenteId: data.docenteId || null }
         });
       }
-    } else if (grupoId === null || gradoId === null) {
-      await prisma.grupoMateria.deleteMany({
-        where: { materiaId }
-      });
+    } else if (grupoId === null || (gradoId === null && input.gradoId === null)) {
+      if (materiaActual.gradoId) {
+        // Eliminar SÓLO de los grupos correspondientes al grado actual
+        await prisma.grupoMateria.deleteMany({
+          where: { materiaId, grupo: { gradoId: materiaActual.gradoId } }
+        });
+      }
     } else if (gradoId !== undefined && gradoId !== null) {
       // Se asignó la materia al Grado, cascada a todos los grupos de este grado
       const gruposGrado = await prisma.grupo.findMany({
