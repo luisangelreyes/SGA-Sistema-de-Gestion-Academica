@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   BookOpen, 
@@ -48,15 +49,24 @@ export function GruposListPage() {
 
   // --- Mutations ---
   const unassignMateriaMutation = trpc.grupos.updateMateria.useMutation({
-    onSuccess: () => {
-      utils.grupos.getMaterias.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getMaterias.invalidate();
+      toast.success('Materia removida exitosamente');
+    },
+    onError: (err) => {
+      toast.error(err.message);
     }
   });
 
   const deleteGrupoMutation = trpc.grupos.deleteGrupo.useMutation({
-    onSuccess: () => {
-      utils.grupos.getGrupos.invalidate();
-      utils.inscripciones.getInscripciones.invalidate();
+    onSuccess: async () => {
+      await utils.grupos.getGrupos.invalidate();
+      await utils.inscripciones.getInscripciones.invalidate();
+      toast.success('Grupo eliminado exitosamente');
+      setFiltroSeccion('Todas');
+    },
+    onError: (err) => {
+      toast.error(err.message);
     }
   });
 
