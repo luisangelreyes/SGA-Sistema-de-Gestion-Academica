@@ -28,7 +28,16 @@ export function UsuarioCrearModal({ isOpen, onClose, onSuccess }: UsuarioCrearMo
       handleClose();
     },
     onError: (error) => {
-      setErrorMsg(error.message || 'Error al crear usuario');
+      let message = error.message;
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].message) {
+          message = parsed.map(err => err.message).join(' • ');
+        }
+      } catch(e) {
+        // ignore
+      }
+      setErrorMsg(message || 'Error al crear usuario');
     }
   });
 
