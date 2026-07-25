@@ -345,6 +345,24 @@ export class GruposService {
       }
     }
 
+    if (grupoId === null || (gradoId === null && input.gradoId === null)) {
+      const uso = await prisma.grupoMateria.findFirst({
+        where: {
+          materiaId,
+          OR: [
+            { asistencias: { some: {} } },
+            { calificaciones: { some: {} } }
+          ]
+        }
+      });
+      if (uso) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No se puede desasignar la materia porque ya tiene calificaciones o asistencias registradas.'
+        });
+      }
+    }
+
     const updatedMateria = await GruposRepository.updateMateria(materiaId, { 
       ...data, 
       ...(gradoId !== undefined && { gradoId }), 
