@@ -11,8 +11,9 @@ import { CicloFormModal } from '../components/CicloFormModal';
 import { ReinscripcionMasivaModal } from '../components/ReinscripcionMasivaModal';
 import { ConfiguracionPromocionesTab } from '../components/ConfiguracionPromocionesTab';
 import { ConfiguracionPlanesPagoTab } from '../components/ConfiguracionPlanesPagoTab';
+import { ConfiguracionRespaldosTab } from '../components/ConfiguracionRespaldosTab';
 
-type TabType = 'ciclos' | 'tarifas' | 'planes-pago' | 'promociones' | 'cierre';
+type TabType = 'ciclos' | 'tarifas' | 'planes-pago' | 'promociones' | 'cierre' | 'respaldos';
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<TabType>('ciclos');
@@ -255,6 +256,16 @@ export function ConfiguracionPage() {
         >
           Operaciones de Ciclo
         </button>
+        <button
+          onClick={() => setActiveTab('respaldos')}
+          className={`px-6 py-3 font-semibold text-sm transition-all border-b-2 cursor-pointer ${
+            activeTab === 'respaldos'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-500 hover:text-navy-800'
+          }`}
+        >
+          Respaldos y Seguridad
+        </button>
       </div>
 
       {/* Content Area */}
@@ -483,6 +494,12 @@ export function ConfiguracionPage() {
         {activeTab === 'promociones' && (
           <div className="space-y-6">
             <ConfiguracionPromocionesTab />
+          </div>
+        )}
+
+        {activeTab === 'respaldos' && (
+          <div className="space-y-6">
+            <ConfiguracionRespaldosTab />
           </div>
         )}
 
