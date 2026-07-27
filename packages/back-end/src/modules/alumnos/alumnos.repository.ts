@@ -4,9 +4,9 @@ import type {
 } from './alumnos.schema';
 
 export class AlumnosRepository {
-  static async getAlumnosActivos() {
+  static async getAlumnosActivos(incluirEliminados: boolean = false) {
     return prisma.alumno.findMany({
-      where: { eliminadoEn: null },
+      where: incluirEliminados ? undefined : { eliminadoEn: null },
       include: {
         nivel: true,
         grado: true,

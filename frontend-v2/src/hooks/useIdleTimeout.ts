@@ -1,61 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 /**
  * Hook para manejar la inactividad del usuario.
- * @param idleTimeMs Tiempo en milisegundos antes de considerar al usuario inactivo (mostrar advertencia)
- * @param warningTimeMs Tiempo en milisegundos de la cuenta regresiva de advertencia antes de ejecutar onIdle
+ * @param idleTimeMs Tiempo en milisegundos antes de considerar al usuario inactivo
  * @param onIdle Función a ejecutar cuando se acaba el tiempo de advertencia (ej. logout)
  */
-export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle: () => void) {
-  const [isIdleWarning, setIsIdleWarning] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(warningTimeMs / 1000);
-
-  const isIdleWarningRef = useRef(false);
+export function useIdleTimeout(idleTimeMs: number, onIdle: () => void) {
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Limpiar temporizadores
   const clearTimers = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
   }, []);
 
   // Reiniciar temporizador de inactividad
   const resetTimer = useCallback(() => {
-    // Si ya estamos en advertencia, la interacción normal NO la quita automáticamente,
-    // el usuario debe dar clic explícitamente en el botón del modal para cerrarla.
-    if (isIdleWarningRef.current) return;
-
     clearTimers();
-    setRemainingTime(warningTimeMs / 1000);
 
     // Iniciar temporizador principal de inactividad
     idleTimerRef.current = setTimeout(() => {
-      isIdleWarningRef.current = true;
-      setIsIdleWarning(true);
-      
-      // Iniciar cuenta regresiva
-      countdownTimerRef.current = setInterval(() => {
-        setRemainingTime((prev) => {
-          if (prev <= 1) {
-            clearTimers();
-            isIdleWarningRef.current = false;
-            setIsIdleWarning(false);
-            onIdle();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      onIdle();
     }, idleTimeMs);
-  }, [clearTimers, idleTimeMs, onIdle, warningTimeMs]);
-
-  // Función explícita para que el usuario mantenga la sesión desde el modal
-  const keepAlive = useCallback(() => {
-    isIdleWarningRef.current = false;
-    setIsIdleWarning(false);
-    resetTimer();
-  }, [resetTimer]);
+  }, [clearTimers, idleTimeMs, onIdle]);
 
   useEffect(() => {
     // Eventos a monitorear
@@ -88,9 +54,5 @@ export function useIdleTimeout(idleTimeMs: number, warningTimeMs: number, onIdle
     };
   }, [clearTimers, resetTimer]);
 
-  return {
-    isIdleWarning,
-    remainingTime,
-    keepAlive
-  };
+  return {};
 }
