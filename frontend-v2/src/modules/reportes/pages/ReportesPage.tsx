@@ -11,7 +11,10 @@ export function ReportesPage() {
 
   // Consultas Lazy (se ejecutan al solicitar)
   const { refetch: fetchIngresos, isFetching: loadingIngresos } = trpc.reportes.reporteIngresos.useQuery(
-    { fechaInicio, fechaFin },
+    { 
+      fechaInicio: `${fechaInicio}T00:00:00.000Z`, 
+      fechaFin: `${fechaFin}T23:59:59.999Z` 
+    },
     { enabled: false }
   );
 
