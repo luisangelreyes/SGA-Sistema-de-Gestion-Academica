@@ -52,4 +52,16 @@ export class ReportesRepository {
       orderBy: { fecha: 'asc' }
     });
   }
+
+  static async getBecasActivas() {
+    return prisma.asignacionBeca.findMany({
+      where: { estado: 'ACTIVA' },
+      include: {
+        alumno: true,
+        beca: true,
+        ciclo: true,
+      },
+      orderBy: { fechaAsignacion: 'desc' }
+    });
+  }
 }
