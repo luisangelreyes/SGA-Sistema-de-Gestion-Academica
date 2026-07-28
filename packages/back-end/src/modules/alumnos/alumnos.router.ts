@@ -10,9 +10,11 @@ export const alumnosRouter = router({
   /**
    * Obtener todos los alumnos
    */
-  getAll: lectura.query(() => {
-    return AlumnosService.getAlumnos();
-  }),
+  getAll: lectura
+    .input(z.object({ incluirEliminados: z.boolean().optional() }).optional())
+    .query(({ input }) => {
+      return AlumnosService.getAlumnos(input?.incluirEliminados);
+    }),
 
   /**
    * Obtener detalle de un alumno por ID
@@ -48,6 +50,15 @@ export const alumnosRouter = router({
     .input(z.number().int().positive())
     .mutation(({ input }) => {
       return AlumnosService.deleteAlumno(input);
+    }),
+
+  /**
+   * Restaurar un alumno eliminado (Soft Delete inverso)
+   */
+  restore: escritura
+    .input(z.number().int().positive())
+    .mutation(({ input }) => {
+      return AlumnosService.restoreAlumno(input);
     }),
 
   /**

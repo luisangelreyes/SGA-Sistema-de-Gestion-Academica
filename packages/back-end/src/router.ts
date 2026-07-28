@@ -12,6 +12,7 @@ import { usuariosRouter } from './modules/usuarios/usuarios.router';
 import { auditoriaRouter } from './modules/auditoria/auditoria.router';
 import { dashboardRouter } from './modules/dashboard/dashboard.router';
 import { reportesRouter } from './modules/reportes/reportes.router';
+import { docentesRouter } from './modules/docentes/docentes.router';
 
 export const appRouter = router({
   auth: authRouter,
@@ -27,6 +28,7 @@ export const appRouter = router({
   auditoria: auditoriaRouter,
   dashboard: dashboardRouter,
   reportes: reportesRouter,
+  docentes: docentesRouter,
 });
 
 export type AppRouter = typeof appRouter;

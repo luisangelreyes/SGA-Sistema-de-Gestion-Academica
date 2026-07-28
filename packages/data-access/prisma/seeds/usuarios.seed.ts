@@ -9,8 +9,8 @@ async function main() {
   // Roles requeridos
   const rolesData = [
     { codigo: 'ADMIN', nombre: 'Administrador' },
-    { codigo: 'GESTOR', nombre: 'Gestor' },
-    { codigo: 'DOCENTE', nombre: 'Docente' },
+    { codigo: 'GESTOR', nombre: 'Gestor Administrativo' },
+    { codigo: 'CONTROL_ESCOLAR', nombre: 'Control Escolar' },
   ];
 
   const rolesMap = new Map();
@@ -30,7 +30,7 @@ async function main() {
   const rolesParaAsignar = [
     { rol: 'ADMIN', inicial: 'a' },
     { rol: 'GESTOR', inicial: 'g' },
-    { rol: 'DOCENTE', inicial: 'd' }
+    { rol: 'CONTROL_ESCOLAR', inicial: 'c' }
   ];
 
   for (const nombre of nombres) {

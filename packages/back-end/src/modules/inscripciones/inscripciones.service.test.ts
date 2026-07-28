@@ -56,7 +56,7 @@ describe('InscripcionesService (Unit)', () => {
     it('createVentana debería transformar strings a Date y crear la ventana', async () => {
       prismaMock.ventanaInscripcionTemprana.create.mockResolvedValue({ ventanaId: 1 } as any);
       await InscripcionesService.createVentana({
-        cicloId: 1, nivelId: 1, descuentoInscripcion: 50, fechaInicio: '2023-01-01', fechaFin: '2023-02-01', activa: true
+        cicloId: 1, descuentoInscripcion: 50, nombrePromo: 'Promo test', gradosId: [1], fechaInicio: '2023-01-01', fechaFin: '2023-02-01', activa: true
       });
       expect(prismaMock.ventanaInscripcionTemprana.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({

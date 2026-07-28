@@ -11,8 +11,9 @@ import { CicloFormModal } from '../components/CicloFormModal';
 import { ReinscripcionMasivaModal } from '../components/ReinscripcionMasivaModal';
 import { ConfiguracionPromocionesTab } from '../components/ConfiguracionPromocionesTab';
 import { ConfiguracionPlanesPagoTab } from '../components/ConfiguracionPlanesPagoTab';
+import { ConfiguracionRespaldosTab } from '../components/ConfiguracionRespaldosTab';
 
-type TabType = 'ciclos' | 'tarifas' | 'planes-pago' | 'promociones' | 'cierre';
+type TabType = 'ciclos' | 'tarifas' | 'planes-pago' | 'promociones' | 'cierre' | 'respaldos';
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<TabType>('ciclos');
@@ -82,7 +83,7 @@ export function ConfiguracionPage() {
       const valores: Record<string, string> = {};
       const existen: Record<string, number> = {};
       niveles.forEach((n: any) => {
-        ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].forEach((concepto) => {
+        ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'].forEach((concepto) => {
           valores[`${n.nivelId}_${concepto}`] = '';
         });
       });
@@ -105,7 +106,7 @@ export function ConfiguracionPage() {
 
   const handleSaveTarifas = async () => {
     if (!selectedCicloId || !niveles) return;
-    const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'];
+    const conceptos = ['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'];
     let hasNegative = false;
     let hasInvalid = false;
     for (const n of niveles) {
@@ -254,6 +255,16 @@ export function ConfiguracionPage() {
           }`}
         >
           Operaciones de Ciclo
+        </button>
+        <button
+          onClick={() => setActiveTab('respaldos')}
+          className={`px-6 py-3 font-semibold text-sm transition-all border-b-2 cursor-pointer ${
+            activeTab === 'respaldos'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-500 hover:text-navy-800'
+          }`}
+        >
+          Respaldos y Seguridad
         </button>
       </div>
 
@@ -410,8 +421,6 @@ export function ConfiguracionPage() {
                           <th className="py-3 font-semibold text-center">Inscripción ($)</th>
                           <th className="py-3 font-semibold text-center">Arancel ($)</th>
                           <th className="py-3 font-semibold text-center">Materiales ($)</th>
-                          <th className="py-3 font-semibold text-center">Libros ($)</th>
-                          <th className="py-3 font-semibold text-center">Uniforme ($)</th>
                           <th className="py-3 font-semibold text-center">Colegiatura ($ / Mes)</th>
                         </tr>
                       </thead>
@@ -419,7 +428,7 @@ export function ConfiguracionPage() {
                         {niveles?.map((n: any) => (
                           <tr key={n.nivelId}>
                             <td className="py-4 font-bold text-navy-800">{n.nombre}</td>
-                            {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'LIBROS', 'UNIFORME', 'COLEGIATURA'].map((c) => (
+                            {['INSCRIPCION', 'ARANCEL', 'MATERIAL', 'COLEGIATURA'].map((c) => (
                               <td key={c} className="py-4 text-center">
                                 <input
                                   type="number"
@@ -485,6 +494,12 @@ export function ConfiguracionPage() {
         {activeTab === 'promociones' && (
           <div className="space-y-6">
             <ConfiguracionPromocionesTab />
+          </div>
+        )}
+
+        {activeTab === 'respaldos' && (
+          <div className="space-y-6">
+            <ConfiguracionRespaldosTab />
           </div>
         )}
 

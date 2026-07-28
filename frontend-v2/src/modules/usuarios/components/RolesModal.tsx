@@ -73,7 +73,7 @@ export function RolesModal({ isOpen, onClose, usuarioId, nombreUsuario, rolesAct
             <div className="text-center text-gray-500 py-8">Cargando roles...</div>
           ) : (
             <div className="space-y-2">
-              {roles?.map((rol: any) => (
+              {roles?.filter((rol: any) => ['Administrador', 'Gestor Administrativo', 'Control Escolar'].includes(rol.nombre)).map((rol: any) => (
                 <label
                   key={rol.rolId}
                   className={clsx(

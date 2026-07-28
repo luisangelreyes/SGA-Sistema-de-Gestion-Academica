@@ -28,7 +28,16 @@ export function UsuarioCrearModal({ isOpen, onClose, onSuccess }: UsuarioCrearMo
       handleClose();
     },
     onError: (error) => {
-      setErrorMsg(error.message || 'Error al crear usuario');
+      let message = error.message;
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].message) {
+          message = parsed.map(err => err.message).join(' • ');
+        }
+      } catch(e) {
+        // ignore
+      }
+      setErrorMsg(message || 'Error al crear usuario');
     }
   });
 
@@ -122,7 +131,7 @@ export function UsuarioCrearModal({ isOpen, onClose, onSuccess }: UsuarioCrearMo
                 required
               >
                 <option value={0} disabled>Seleccione un rol...</option>
-                {roles?.map((rol: any) => (
+                {roles?.filter((rol: any) => ['Administrador', 'Gestor Administrativo', 'Control Escolar'].includes(rol.nombre)).map((rol: any) => (
                   <option key={rol.rolId} value={rol.rolId}>
                     {rol.nombre}
                   </option>
@@ -133,11 +142,6 @@ export function UsuarioCrearModal({ isOpen, onClose, onSuccess }: UsuarioCrearMo
               </p>
             </div>
             
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-6">
-              <p className="text-sm text-blue-800">
-                <span className="font-semibold">Nota:</span> Al ser creado, este usuario tendrá que cambiar obligatoriamente su contraseña en su primer inicio de sesión.
-              </p>
-            </div>
 
             {errorMsg && (
               <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">

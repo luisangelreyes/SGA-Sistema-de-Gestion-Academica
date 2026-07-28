@@ -300,6 +300,25 @@ export class GruposService {
       clave 
     });
 
+    // Cascade to existing groups of this Grado
+    if (gradoId) {
+      const gruposGrado = await prisma.grupo.findMany({
+        where: { gradoId, eliminadoEn: null }
+      });
+      for (const g of gruposGrado) {
+        // Only create if we haven't already for this specific grupoId
+        if (!grupoId || g.grupoId !== grupoId) {
+          await prisma.grupoMateria.create({
+            data: {
+              grupoId: g.grupoId,
+              materiaId: materia.materiaId,
+              docenteId: data.docenteId || null
+            }
+          });
+        }
+      }
+    }
+
     if (grupoId) {
       await prisma.grupoMateria.create({
         data: {
@@ -337,6 +356,23 @@ export class GruposService {
         where: { materiaId, grupoId }
       });
       if (!existRelation) {
+        // Validar dependencias antes de eliminar relaciones anteriores
+        const dependencias = await prisma.grupoMateria.findFirst({
+          where: {
+            materiaId,
+            OR: [
+              { calificaciones: { some: {} } },
+              { asistencias: { some: {} } }
+            ]
+          }
+        });
+        if (dependencias) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'No se puede modificar la asignación porque ya tiene calificaciones o asistencias registradas.'
+          });
+        }
+
         // Eliminar relaciones anteriores
         await prisma.grupoMateria.deleteMany({
           where: { materiaId }
@@ -356,6 +392,23 @@ export class GruposService {
         });
       }
     } else if (grupoId === null || gradoId === null) {
+      // Validar dependencias
+      const dependencias = await prisma.grupoMateria.findFirst({
+        where: {
+          materiaId,
+          OR: [
+            { calificaciones: { some: {} } },
+            { asistencias: { some: {} } }
+          ]
+        }
+      });
+      if (dependencias) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No se puede desasignar la materia porque ya tiene calificaciones o asistencias registradas.'
+        });
+      }
+
       await prisma.grupoMateria.deleteMany({
         where: { materiaId }
       });
@@ -435,7 +488,24 @@ export class GruposService {
       }
     }
 
-    return GruposRepository.createGrupo(input);
+    const nuevoGrupo = await GruposRepository.createGrupo(input);
+
+    // Heredar las materias que ya estén asignadas al grado
+    const materiasDelGrado = await prisma.materia.findMany({
+      where: { gradoId: input.gradoId, eliminadoEn: null }
+    });
+
+    for (const mat of materiasDelGrado) {
+      await prisma.grupoMateria.create({
+        data: {
+          grupoId: nuevoGrupo.grupoId,
+          materiaId: mat.materiaId,
+          docenteId: mat.docenteId || null
+        }
+      });
+    }
+
+    return nuevoGrupo;
   }
 
   static async updateGrupo(input: UpdateGrupoInput) {
@@ -453,6 +523,23 @@ export class GruposService {
   }
 
   static async unassignMateriaFromGrupo(input: UnassignMateriaGrupoInput) {
+    // Validar dependencias
+    const dependencias = await prisma.grupoMateria.findFirst({
+      where: {
+        grupoMateriaId: input.grupoMateriaId,
+        OR: [
+          { calificaciones: { some: {} } },
+          { asistencias: { some: {} } }
+        ]
+      }
+    });
+    if (dependencias) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'No se puede remover la materia del grupo porque ya tiene calificaciones o asistencias registradas.'
+      });
+    }
+
     return GruposRepository.unassignMateriaFromGrupo(input.grupoMateriaId);
   }
 
@@ -759,26 +846,4 @@ export class GruposService {
     });
   }
 
-  static async getDocentes() {
-    return prisma.usuario.findMany({
-      where: {
-        eliminadoEn: null,
-        activo: true,
-        roles: {
-          some: {
-            rol: { codigo: 'DOCENTE' },
-            eliminadoEn: null
-          }
-        }
-      },
-      select: {
-        usuarioId: true,
-        nombreCompleto: true
-      },
-      orderBy: {
-        nombreCompleto: 'asc'
-      }
-    });
-  }
 }
-

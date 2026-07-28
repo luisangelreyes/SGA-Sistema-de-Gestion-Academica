@@ -11,12 +11,15 @@ export const MODULOS_SISTEMA = [
   'Usuarios',
   'Alumnos',
   'Tutores',
+  'Inscripciones',
   'Grupos',
   'Materias',
   'Pagos',
   'Becas',
   'Reportes',
-  'Configuracion'
+  'Configuracion',
+  'Calificaciones',
+  'Boletas'
 ] as const;
 
 export function UsuarioDetailPage() {

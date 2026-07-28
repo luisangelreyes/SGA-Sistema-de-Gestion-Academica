@@ -1,75 +1,33 @@
 {
+  "$schema": "https://schema.tauri.app/2.0.0/schema.json",
+  "productName": "SGA",
+  "version": "1.0.0",
+  "identifier": "com.sga.app",
   "build": {
-    "beforeDevCommand": "npm run dev:front-end --workspace=@sga/front-end",
-    "beforeBuildCommand": "npm run build --workspace=@sga/front-end",
-    "devPath": "http://localhost:5173",
-    "distDir": "../front-end/dist"
+    "beforeDevCommand": "npm run dev --workspace=frontend-v2",
+    "beforeBuildCommand": "npm run build --workspace=frontend-v2",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../../../frontend-v2/dist"
   },
-  "package": {
-    "productName": "SGA",
-    "version": "1.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "execute": true,
-        "sidecar": true
-      }
-    },
-    "bundle": {
-      "active": true,
-      "category": "Education",
-      "copyright": "",
-      "deb": {
-        "depends": []
-      },
-      "externalBin": [
-        "binaries/initdb",
-        "binaries/postgres",
-        "binaries/pg_ctl",
-        "binaries/back"
-      ],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "com.sga.app",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
-    },
-    "security": {
-      "csp": null
-    },
-    "updater": {
-      "active": false
-    },
+  "app": {
     "windows": [
       {
-        "fullscreen": false,
+        "title": "SGA",
+        "width": 1024,
         "height": 768,
         "resizable": true,
-        "title": "SGA",
-        "width": 1024
+        "fullscreen": false
       }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico"
     ]
   }
 }

@@ -5,21 +5,23 @@ export const MODULOS_SISTEMA = [
   'Usuarios',
   'Alumnos',
   'Tutores',
+  'Inscripciones',
   'Grupos',
   'Materias',
   'Pagos',
   'Becas',
   'Reportes',
   'Configuracion',
-  'Calificaciones'
+  'Calificaciones',
+  'Boletas'
 ] as const;
 
 export type ModuloSistema = typeof MODULOS_SISTEMA[number];
 
 export const CrearUsuarioSchema = z.object({
-  nombreUsuario: z.string().min(4).max(80),
-  nombreCompleto: z.string().min(10).max(120),
-  password: z.string().min(8).max(50),
+  nombreUsuario: z.string().min(4, 'El nombre de usuario debe tener al menos 4 letras').max(80),
+  nombreCompleto: z.string().min(1, 'El nombre completo es obligatorio').max(120),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(50),
   rolId: z.number().min(1, 'Debe seleccionar un rol'),
 });
 

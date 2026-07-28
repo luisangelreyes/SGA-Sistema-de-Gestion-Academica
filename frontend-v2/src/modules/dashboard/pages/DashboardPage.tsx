@@ -1,4 +1,4 @@
-import { Users, AlertTriangle, TrendingUp, Award, CreditCard, BarChart3, Clock } from 'lucide-react';
+import { Users, AlertTriangle, TrendingUp, Award, CreditCard, BarChart3, Clock, BookOpen, Layers, GraduationCap, UserPlus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { trpc } from '../../../lib/trpc';
@@ -8,17 +8,23 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const role = user?.role?.toUpperCase() || '';
-  const isDocente = role == 'DOCENTE';
+  const isDocente = role === 'CONTROL ESCOLAR' || role === 'CONTROL_ESCOLAR';
   const isAdmin = role === 'ADMIN' || role === 'ADMINISTRADOR';
 
-  // Obtener datos vía tRPC
-  const { data: metricasInscripcion, isLoading: loadingInscripcion } = trpc.dashboard.obtenerMetricasInscripcion.useQuery(undefined, { enabled: isAdmin });
-  const { data: kpisFinancieros, isLoading: loadingKpis } = trpc.dashboard.obtenerKpisFinancieros.useQuery(undefined, { enabled: isAdmin });
-  const { data: ingresosChartData, isLoading: loadingChart } = trpc.dashboard.obtenerIngresosUltimos7Dias.useQuery(undefined, { enabled: isAdmin });
-  const { data: ultimosPagos, isLoading: loadingPagos } = trpc.dashboard.obtenerUltimosPagos.useQuery(undefined, { enabled: isAdmin });
-  const { data: topDeudores, isLoading: loadingTopDeudores } = trpc.dashboard.obtenerTopDeudores.useQuery(undefined, { enabled: isAdmin });
+  const isGestor = role === 'GESTOR' || role === 'GESTIÓN ADMINISTRATIVA';
+  const isFinanciero = isAdmin || isGestor;
 
-  const loading = loadingInscripcion || loadingKpis || loadingChart || loadingPagos || loadingTopDeudores;
+  // Obtener datos vía tRPC
+  const { data: metricasInscripcion, isLoading: loadingInscripcion } = trpc.dashboard.obtenerMetricasInscripcion.useQuery(undefined, { enabled: true });
+  const { data: kpisFinancieros, isLoading: loadingKpis } = trpc.dashboard.obtenerKpisFinancieros.useQuery(undefined, { enabled: isFinanciero });
+  const { data: ingresosChartData, isLoading: loadingChart } = trpc.dashboard.obtenerIngresosUltimos7Dias.useQuery(undefined, { enabled: isFinanciero });
+  const { data: ultimosPagos, isLoading: loadingPagos } = trpc.dashboard.obtenerUltimosPagos.useQuery(undefined, { enabled: isFinanciero });
+  const { data: topDeudores, isLoading: loadingTopDeudores } = trpc.dashboard.obtenerTopDeudores.useQuery(undefined, { enabled: isFinanciero });
+
+  const { data: alumnos, isLoading: loadingAlumnosList } = trpc.alumnos.getAll.useQuery(undefined, { enabled: isDocente || isAdmin });
+  const { data: grupos, isLoading: loadingGrupos } = trpc.grupos.getGrupos.useQuery(undefined, { enabled: isDocente || isAdmin });
+
+  const loading = loadingInscripcion || loadingKpis || loadingChart || loadingPagos || loadingTopDeudores || loadingAlumnosList || loadingGrupos;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
@@ -37,7 +43,7 @@ export function DashboardPage() {
         )}
       </div>
 
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${isDocente ? 'lg:grid-cols-1' : 'lg:grid-cols-4'} gap-6`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6`}>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
             <Users size={24} />
@@ -49,6 +55,44 @@ export function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {isDocente && (
+          <>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
+                <Layers size={24} />
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium mb-0.5">Grupos Activos</h3>
+                <p className="text-2xl font-bold text-gray-800">
+                  {loading ? '...' : (grupos?.length || 0)}
+                </p>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-fuchsia-50 text-fuchsia-600 rounded-full flex items-center justify-center">
+                <BookOpen size={24} />
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium mb-0.5">Materias Asignadas</h3>
+                <p className="text-2xl font-bold text-gray-800">
+                  {loading ? '...' : (grupos as any[])?.reduce((acc, g) => acc + (g.materias?.length || 0), 0) || 0}
+                </p>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center">
+                <GraduationCap size={24} />
+              </div>
+              <div>
+                <h3 className="text-gray-500 text-sm font-medium mb-0.5">Niveles Educativos</h3>
+                <p className="text-2xl font-bold text-gray-800">
+                  {loading ? '...' : new Set((grupos as any[])?.map(g => g.nivel?.nombre)).size || 0}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
 
         {!isDocente && (
           <>
@@ -90,6 +134,70 @@ export function DashboardPage() {
           </>
         )}
       </div>
+
+      {isDocente && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Últimos Alumnos Inscritos */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[280px]">
+            <div className="flex items-center gap-2 mb-6">
+              <UserPlus className="text-blue-500" size={18} />
+              <h3 className="font-bold text-sm text-gray-800">Últimos Alumnos Registrados</h3>
+            </div>
+            <div className="flex-1 space-y-0 divide-y divide-gray-100">
+              {alumnos && alumnos.length > 0 ? (
+                [...alumnos].sort((a: any, b: any) => b.alumnoId - a.alumnoId).slice(0, 5).map((al: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center py-3">
+                    <div className="w-2/3">
+                      <p className="text-xs font-bold text-gray-800 truncate" title={al.nombreCompleto}>{al.nombreCompleto}</p>
+                      <p className="text-[10px] text-gray-500 truncate">Matrícula: {al.matricula || 'N/A'}</p>
+                    </div>
+                    <p className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md w-1/3 text-center truncate">
+                      {al.nivel?.nombre || 'N/A'}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex items-center justify-center min-h-[180px]">
+                  <p className="text-gray-400 text-xs">No hay alumnos registrados.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Resumen de Grupos y Cupos */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[280px]">
+            <div className="flex items-center gap-2 mb-6">
+              <Layers className="text-indigo-500" size={18} />
+              <h3 className="font-bold text-sm text-gray-800">Grupos Pendientes de Calificar</h3>
+            </div>
+            <div className="flex-1 space-y-0 divide-y divide-gray-100">
+              {grupos && (grupos as any[]).filter(g => (g.alumnosInscritos || 0) > 0).length > 0 ? (
+                (grupos as any[])
+                .filter(g => (g.alumnosInscritos || 0) > 0)
+                .slice(0, 5).map((g, i) => (
+                  <div key={i} className="flex justify-between items-center py-3">
+                    <div className="w-2/3">
+                      <p className="text-xs font-bold text-gray-800 truncate">
+                        {g.grado?.numero}° {g.nombre} - {g.nivel?.nombre}
+                      </p>
+                      <p className="text-[10px] text-gray-500 truncate">
+                        Evaluaciones trimestrales pendientes
+                      </p>
+                    </div>
+                    <p className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md w-1/4 text-center">
+                      Requiere atención
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex items-center justify-center min-h-[180px]">
+                  <p className="text-gray-400 text-xs">Todos los grupos están al corriente.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isDocente && (
         <>

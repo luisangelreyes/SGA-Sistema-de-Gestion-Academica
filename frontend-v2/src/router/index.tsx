@@ -12,6 +12,7 @@ import { ExpedienteTutorPage } from '../modules/tutores/pages/ExpedienteTutorPag
 import { ConfiguracionPage } from '../modules/configuracion/pages/ConfiguracionPage';
 import { GruposListPage } from '../modules/grupos/pages/GruposListPage';
 import { MateriasListPage } from '../modules/grupos/pages/MateriasListPage';
+import { DocentesListPage } from '../modules/docentes/pages/DocentesListPage';
 import { UsuariosListPage } from '../modules/usuarios/pages/UsuariosListPage';
 import { UsuarioDetailPage } from '../modules/usuarios/pages/UsuarioDetailPage';
 import { CajaPage } from '../modules/pagos/pages/CajaPage';
@@ -19,6 +20,7 @@ import { ReciboPagoPage } from '../modules/pagos/pages/ReciboPagoPage';
 import { BoletasPage } from '../modules/calificaciones/pages/BoletasPage';
 import { CalificacionesPage } from '../modules/calificaciones/pages/CalificacionesPage';
 import { BecasPage } from '../modules/becas/pages/BecasPage';
+import { ReportesPage } from '../modules/reportes/pages/ReportesPage';
 
 export const router = createBrowserRouter([
   {
@@ -43,14 +45,16 @@ export const router = createBrowserRouter([
       { path: 'tutores/:id', element: <ExpedienteTutorPage /> },
       { path: 'grupos', element: <GruposListPage /> },
       { path: 'materias', element: <MateriasListPage /> },
+      { path: 'docentes', element: <DocentesListPage /> },
       { path: 'configuracion', element: <ConfiguracionPage /> },
       { path: 'usuarios', element: <UsuariosListPage /> },
       { path: 'usuarios/:id', element: <UsuarioDetailPage /> },
       { path: 'pagos', element: <CajaPage /> },
+      { path: 'pagos/recibo/:id', element: <ReciboPagoPage /> },
       { path: 'becas', element: <BecasPage /> },
       { path: 'boletas', element: <BoletasPage /> },
       { path: 'calificaciones', element: <CalificacionesPage /> },
-      // Aquí se irán registrando las rutas de cada módulo (modules/pagos/...)
+      { path: 'reportes', element: <ReportesPage /> }
     ],
   },
   {

@@ -25,7 +25,7 @@ export function AsignarMateriaModal({ isOpen, onClose, gradoId, onSuccess }: Pro
 
   const { data: materiasData, isLoading: isLoadingMaterias } = trpc.grupos.getMaterias.useQuery(undefined, { enabled: isOpen });
   const materias = materiasData as any[] | undefined;
-  const { data: docentes, isLoading: isLoadingDocentes } = trpc.grupos.getDocentes.useQuery(undefined, { enabled: isOpen });
+  const { data: docentes, isLoading: isLoadingDocentes } = trpc.docentes.getActivos.useQuery(undefined, { enabled: isOpen });
 
   const [docenteSearchQuery, setDocenteSearchQuery] = useState('');
   const [showDocenteDropdown, setShowDocenteDropdown] = useState(false);
@@ -35,7 +35,7 @@ export function AsignarMateriaModal({ isOpen, onClose, gradoId, onSuccess }: Pro
     defaultValues: { materiaId: '', docenteId: '' },
   });
 
-  const filteredDocentes = docentes?.filter(d =>
+  const filteredDocentes = docentes?.filter((d: any) =>
     d.nombreCompleto.toLowerCase().includes(docenteSearchQuery.toLowerCase())
   ) || [];
 
@@ -145,11 +145,11 @@ export function AsignarMateriaModal({ isOpen, onClose, gradoId, onSuccess }: Pro
                   {filteredDocentes.length === 0 ? (
                     <div className="px-4 py-2 text-xs text-gray-500 italic">No se encontraron docentes</div>
                   ) : (
-                    filteredDocentes.map(d => (
+                    filteredDocentes.map((d: any) => (
                       <div
-                        key={d.usuarioId}
+                        key={d.docenteId}
                         onMouseDown={() => {
-                          field.onChange(String(d.usuarioId));
+                          field.onChange(String(d.docenteId));
                           setDocenteSearchQuery(d.nombreCompleto);
                           setShowDocenteDropdown(false);
                         }}

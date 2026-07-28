@@ -21,8 +21,8 @@ export const createVentanaInscripcionSchema = z.object({
   fechaFin: z.string().datetime({ message: 'Fecha de fin inválida' }),
   descuentoInscripcion: z.number().min(0).max(100, 'El descuento no puede superar 100%'),
   becaId: z.number().int().positive().optional().nullable(),
-  nivelId: z.number().int().positive('Debe seleccionar un nivel educativo'),
-  gradoId: z.number().int().positive().optional().nullable(),
+  nombrePromo: z.string().min(1, 'El nombre es requerido').max(100),
+  gradosId: z.array(z.number().int().positive()).min(1, 'Debe seleccionar al menos un grado'),
   activa: z.boolean().default(true)
 });
 

@@ -12,6 +12,10 @@ vi.mock('jsonwebtoken', () => ({
 describe('Reportes Router (Unit)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.usuarioPermisoModulo.findUnique.mockResolvedValue({
+      activo: true,
+      nivel: 'LECTURA_Y_ESCRITURA'
+    } as any);
   });
 
   const ctxMock = {
@@ -91,7 +95,7 @@ describe('Reportes Router (Unit)', () => {
           fechaPago: new Date('2023-01-15T12:00:00Z'),
           alumno: { nombreCompleto: 'Alumno Pagador' },
           tutor: { nombreCompleto: 'Tutor Pagador' },
-          metodoPago: 'EFECTIVO',
+          metodoPago: 'OTRO',
           montoTotal: 3000,
           registrador: { nombreCompleto: 'Cajero' }
         }

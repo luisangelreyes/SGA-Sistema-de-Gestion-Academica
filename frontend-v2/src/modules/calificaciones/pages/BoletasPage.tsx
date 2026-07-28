@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { FileText, Download, Search, ArrowLeft } from 'lucide-react';
+import { FileText, Download, Search, ArrowLeft, X, Printer } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { trpc } from '../../../lib/trpc';
 import { parseSpanishName } from '../../../utils/nameParser';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -238,7 +240,8 @@ async function exportarBoletaPDF(
   doc.setFontSize(7);
   doc.text('FECHA DE EXPEDICIÓN', dateX + 17, y + 32, { align: 'center' });
 
-  doc.save(`Boleta_${nivel}_${matricula || alumno.alumnoId}.pdf`);
+  const fileName = `Boleta_${nivel}_${matricula || alumno.alumnoId}.pdf`;
+  return { doc, fileName };
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -249,6 +252,7 @@ export function BoletasPage() {
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<AlumnoResumen | null>(null);
   const [cicloSeleccionadoId, setCicloSeleccionadoId] = useState<number | null>(null);
   const [generando, setGenerando] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<{ doc: jsPDF; url: string; fileName: string } | null>(null);
 
   const { data: alumnos, isLoading: loadingAlumnos } = trpc.alumnos.getAll.useQuery();
 
@@ -257,7 +261,7 @@ export function BoletasPage() {
     { enabled: !!alumnoSeleccionado && !!cicloSeleccionadoId }
   );
 
-  const nivelesDisponibles = ['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'BACHILLERATO'];
+  const nivelesDisponibles = ['PRIMARIA', 'SECUNDARIA'];
 
   // Agrupar calificaciones por materia → T1, T2, T3 según periodoId
   const calificacionesFilas: CalificacionFila[] = (() => {
@@ -285,6 +289,9 @@ export function BoletasPage() {
   })();
 
   const resultados = ((alumnos ?? []) as AlumnoResumen[]).filter((al) => {
+    const n = al.nivel?.nombre?.toUpperCase() || '';
+    if (!n.includes('PRIMARIA') && !n.includes('SECUNDARIA')) return false;
+
     const q = busqueda.trim().toLowerCase();
     const matchQ = !q || al.nombreCompleto.toLowerCase().includes(q) || (al.matricula?.toLowerCase().includes(q) ?? false);
     const matchN = !filtroNivel || (al.nivel?.nombre?.toUpperCase() === filtroNivel);
@@ -305,11 +312,46 @@ export function BoletasPage() {
     try {
       const cicloNombre = alumnoSeleccionado.inscripciones
         ?.find((i) => i.ciclo?.cicloId === cicloSeleccionadoId)?.ciclo?.nombre ?? '';
-      await exportarBoletaPDF(alumnoSeleccionado, calificacionesFilas, promedioGeneral, cicloNombre, boletaData?.docenteTitular || '');
+      const { doc, fileName } = await exportarBoletaPDF(
+        alumnoSeleccionado,
+        calificacionesFilas,
+        promedioGeneral,
+        cicloNombre,
+        boletaData?.docenteTitular || ''
+      );
+      setPdfPreview({ doc, url: doc.output('bloburl').toString(), fileName });
     } catch (err) {
       console.error(err);
     } finally {
       setGenerando(false);
+    }
+  };
+
+  const handlePrint = () => {
+    if (!pdfPreview) return;
+    pdfPreview.doc.autoPrint();
+    window.open(pdfPreview.doc.output('bloburl').toString(), '_blank');
+  };
+
+  const handleDownloadNative = async () => {
+    if (!pdfPreview) return;
+    const { doc, fileName } = pdfPreview;
+    if ('__TAURI__' in window) {
+      try {
+        const filePath = await save({
+          filters: [{ name: 'PDF', extensions: ['pdf'] }],
+          defaultPath: fileName,
+        });
+        if (filePath) {
+          const pdfArrayBuffer = doc.output('arraybuffer');
+          await writeFile(filePath, new Uint8Array(pdfArrayBuffer));
+        }
+      } catch (error) {
+        console.error('Error al guardar archivo nativo en Tauri:', error);
+        doc.save(fileName);
+      }
+    } else {
+      doc.save(fileName);
     }
   };
 
@@ -508,8 +550,47 @@ export function BoletasPage() {
       </div>
 
       <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>
-        La boleta se descarga automáticamente en formato PDF al hacer clic en "Descargar PDF".
+        Al presionar Previsualizar Boleta se abrirá una ventana para imprimir o descargar el PDF.
       </p>
+
+      {/* Modal Preview PDF */}
+      {pdfPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
+          <div className="bg-white w-full max-w-5xl h-[95vh] rounded-xl flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-xl font-bold text-slate-800">Vista Previa de Boleta</h3>
+              <button 
+                onClick={() => setPdfPreview(null)} 
+                className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                title="Cerrar"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 bg-slate-100 p-2">
+              <iframe src={pdfPreview.url} className="w-full h-full rounded border border-slate-300 shadow-inner" />
+            </div>
+            
+            <div className="p-4 border-t flex justify-end gap-4 bg-slate-50">
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-lg transition-colors"
+              >
+                <Printer size={18} />
+                Imprimir
+              </button>
+              <button 
+                onClick={handleDownloadNative}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors"
+              >
+                <Download size={18} />
+                Guardar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

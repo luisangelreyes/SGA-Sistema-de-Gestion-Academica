@@ -1,4 +1,4 @@
-import { Plus, Search, Download, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Download, Trash2, Edit2, Undo } from 'lucide-react';
 import { trpc } from '../../../lib/trpc';
 import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
@@ -6,6 +6,7 @@ import { NuevoAlumnoModal } from '../../alumnos/components/NuevoAlumnoModal';
 import { NuevoTutorModal } from '../../alumnos/components/NuevoTutorModal';
 import { VincularTutorModal } from '../../alumnos/components/VincularTutorModal';
 import { EditarAlumnoModal } from '../../alumnos/components/EditarAlumnoModal';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 // Helpers to rank levels for sorting
 const nivelRanking: Record<string, number> = {
@@ -18,8 +19,12 @@ const nivelRanking: Record<string, number> = {
 export function AlumnosPage() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const { data: alumnos, isLoading, refetch } = trpc.alumnos.getAll.useQuery();
+  const user = useAuthStore(state => state.user);
+  const puedeEscribir = user?.permisosModulos?.some(p => p.modulo === 'Alumnos' && p.nivel === 'LECTURA_Y_ESCRITURA') ?? false;
+  const [estadoFilter, setEstadoFilter] = useState('Activos');
+  const { data: alumnos, isLoading, refetch } = trpc.alumnos.getAll.useQuery({ incluirEliminados: estadoFilter === 'Eliminados' });
   const deleteAlumnoMutation = trpc.alumnos.delete.useMutation();
+  const restoreAlumnoMutation = trpc.alumnos.restore.useMutation();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [alumnoParaTutor, setAlumnoParaTutor] = useState<number | null>(null);
@@ -29,7 +34,6 @@ export function AlumnosPage() {
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('Activos');
   const [nivelFilter, setNivelFilter] = useState('Todos los niveles');
   const [gradoFilter, setGradoFilter] = useState('Todos los grados');
   const [grupoFilter, setGrupoFilter] = useState('Todos los grupos');
@@ -50,8 +54,10 @@ export function AlumnosPage() {
       const matchesSearch = fullName.includes(term) || matricula.includes(term);
 
       // Estado
-      const isActive = a.estado === 'ACTIVO';
-      const matchesEstado = estadoFilter === 'Activos' ? isActive : (estadoFilter === 'Inactivos' ? !isActive : true);
+      let matchesEstado = true;
+      if (estadoFilter === 'Activos') matchesEstado = a.estado === 'ACTIVO' && !a.eliminadoEn;
+      if (estadoFilter === 'Inactivos') matchesEstado = a.estado !== 'ACTIVO' && !a.eliminadoEn;
+      if (estadoFilter === 'Eliminados') matchesEstado = !!a.eliminadoEn;
 
       // Nivel, Grado, Grupo
       const inscripcionActual = a.inscripciones?.[0];
@@ -123,12 +129,14 @@ export function AlumnosPage() {
         <div>
           <h2 className="text-3xl font-bold text-[#001429]">Directorio Escolar</h2>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#001429] text-white font-semibold rounded-xl hover:bg-[#002952] transition-colors shadow-lg shadow-blue-900/20 cursor-pointer"
-        >
-          <Plus size={18} /> Nuevo alumno
-        </button>
+        {puedeEscribir && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#001429] text-white font-semibold rounded-xl hover:bg-[#002952] transition-colors shadow-lg shadow-blue-900/20 cursor-pointer"
+          >
+            <Plus size={18} /> Nuevo alumno
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden min-h-[600px]">
@@ -154,6 +162,7 @@ export function AlumnosPage() {
               <option value="Todos">Todos los estados</option>
               <option value="Activos">Activos</option>
               <option value="Inactivos">Inactivos</option>
+              <option value="Eliminados">Eliminados</option>
             </select>
 
             <select
@@ -251,29 +260,50 @@ export function AlumnosPage() {
                           >
                             Ver expediente
                           </button>
-                          <button
-                            onClick={() => setEditingAlumno(a)}
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors cursor-pointer"
-                            title="Editar alumno"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (window.confirm('¿Estás seguro de que deseas eliminar este alumno? Esta acción no se puede deshacer.')) {
-                                try {
-                                  await deleteAlumnoMutation.mutateAsync(a.alumnoId);
-                                  utils.alumnos.getAll.invalidate();
-                                } catch (error: any) {
-                                  alert(error.message || 'Error al eliminar alumno');
+                          {a.eliminadoEn ? (
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('¿Estás seguro de que deseas restaurar este alumno?')) {
+                                  try {
+                                    await restoreAlumnoMutation.mutateAsync(a.alumnoId);
+                                    utils.alumnos.getAll.invalidate();
+                                  } catch (error: any) {
+                                    alert(error.message || 'Error al restaurar alumno');
+                                  }
                                 }
-                              }
-                            }}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Eliminar alumno"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                              }}
+                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                              title="Restaurar alumno"
+                            >
+                              <Undo size={16} />
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setEditingAlumno(a)}
+                                className="p-1.5 text-gray-500 hover:bg-gray-100 hover:text-blue-600 rounded-lg transition-colors cursor-pointer"
+                                title="Editar alumno"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('¿Estás seguro de que deseas eliminar este alumno? Esta acción no se puede deshacer.')) {
+                                    try {
+                                      await deleteAlumnoMutation.mutateAsync(a.alumnoId);
+                                      utils.alumnos.getAll.invalidate();
+                                    } catch (error: any) {
+                                      alert(error.message || 'Error al eliminar alumno');
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                title="Eliminar alumno"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

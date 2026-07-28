@@ -150,7 +150,7 @@ export function UsuariosListPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="todos">Todos los roles</option>
-            {roles?.map((rol: any) => (
+            {roles?.filter((rol: any) => ['Administrador', 'Gestor Administrativo', 'Control Escolar'].includes(rol.nombre)).map((rol: any) => (
               <option key={rol.rolId} value={rol.rolId.toString()}>{rol.nombre}</option>
             ))}
           </select>

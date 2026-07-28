@@ -10,7 +10,7 @@ import { Button } from '../../../components/ui/Button';
 const schema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido').max(80),
   gradoId: z.string().optional().nullable(),
-  tipo: z.enum(['curricular', 'extracurricular', 'taller']),
+  tipo: z.enum(['curricular', 'extracurricular', 'club']),
   docenteId: z.string().optional().nullable(),
 });
 
@@ -29,7 +29,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
 
   const { data: grados } = trpc.grupos.getGrados.useQuery(undefined, { enabled: isOpen });
   const { data: niveles } = trpc.grupos.getNiveles.useQuery(undefined, { enabled: isOpen });
-  const { data: docentes } = trpc.grupos.getDocentes.useQuery(undefined, { enabled: isOpen });
+  const { data: docentes } = trpc.docentes.getActivos.useQuery(undefined, { enabled: isOpen });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -51,7 +51,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
   useEffect(() => {
     if (isOpen && docentes) {
       if (initialData) {
-        const doc = docentes.find(d => d.usuarioId === initialData.docenteId);
+        const doc = docentes.find(d => d.docenteId === initialData.docenteId);
         setSearchQuery(doc ? doc.nombreCompleto : '');
         reset({
           nombre: initialData.nombre,
@@ -126,7 +126,7 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Tipo de Materia</label>
               <div className="flex gap-2 mt-1">
-                {(['curricular', 'extracurricular', 'taller'] as const).map(tipo => {
+                {(['curricular', 'extracurricular', 'club'] as const).map(tipo => {
                   const isSelected = field.value === tipo;
                   return (
                     <button
@@ -191,9 +191,8 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
                     const val = e.target.value;
                     setSearchQuery(val);
                     setShowDropdown(true);
-                    if (!val) {
-                      field.onChange('');
-                    }
+                    const doc = docentes?.find(d => d.nombreCompleto.toLowerCase() === val.toLowerCase());
+                    field.onChange(doc ? String(doc.docenteId) : '');
                   }}
                   onFocus={() => setShowDropdown(true)}
                   onBlur={() => {
@@ -221,9 +220,9 @@ export function MateriaFormModal({ isOpen, onClose, materiaId, initialData }: Pr
                   ) : (
                     filteredDocentes.map(d => (
                       <div
-                        key={d.usuarioId}
+                        key={d.docenteId}
                         onMouseDown={() => {
-                          field.onChange(String(d.usuarioId));
+                          field.onChange(String(d.docenteId));
                           setSearchQuery(d.nombreCompleto);
                           setShowDropdown(false);
                         }}

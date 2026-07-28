@@ -1,4 +1,4 @@
-import { router, protectedProcedure, hasModulePermission } from '../../trpc';
+import { router, protectedProcedure, hasModulePermission, gestorProcedure } from '../../trpc';
 import { z } from 'zod';
 import { GruposService } from './grupos.service';
 import {
@@ -21,32 +21,31 @@ const escrituraMaterias = protectedProcedure.use(hasModulePermission('Materias',
 
 export const gruposRouter = router({
   // --- Niveles Educativos ---
-  getNiveles: lectura.query(() => GruposService.getNiveles()),
-  createNivel: escritura.input(createNivelEducativoSchema).mutation(({ input }) => GruposService.createNivel(input)),
-  updateNivel: escritura.input(updateNivelEducativoSchema).mutation(({ input }) => GruposService.updateNivel(input)),
-  deleteNivel: escritura.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteNivel(input)),
+  getNiveles: protectedProcedure.query(() => GruposService.getNiveles()),
+  createNivel: gestorProcedure.input(createNivelEducativoSchema).mutation(({ input }) => GruposService.createNivel(input)),
+  updateNivel: gestorProcedure.input(updateNivelEducativoSchema).mutation(({ input }) => GruposService.updateNivel(input)),
+  deleteNivel: gestorProcedure.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteNivel(input)),
 
   // --- Grados ---
-  getGrados: lectura.query(() => GruposService.getGrados()),
-  createGrado: escritura.input(createGradoSchema).mutation(({ input }) => GruposService.createGrado(input)),
-  updateGrado: escritura.input(updateGradoSchema).mutation(({ input }) => GruposService.updateGrado(input)),
-  deleteGrado: escritura.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteGrado(input)),
+  getGrados: protectedProcedure.query(() => GruposService.getGrados()),
+  createGrado: gestorProcedure.input(createGradoSchema).mutation(({ input }) => GruposService.createGrado(input)),
+  updateGrado: gestorProcedure.input(updateGradoSchema).mutation(({ input }) => GruposService.updateGrado(input)),
+  deleteGrado: gestorProcedure.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteGrado(input)),
 
   // --- Ciclos Escolares ---
-  getCiclos: lectura.query(() => GruposService.getCiclos()),
-  createCiclo: escritura.input(createCicloEscolarSchema).mutation(({ input }) => GruposService.createCiclo(input)),
-  updateCiclo: escritura.input(updateCicloEscolarSchema).mutation(({ input }) => GruposService.updateCiclo(input)),
-  deleteCiclo: escritura.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteCiclo(input)),
+  getCiclos: protectedProcedure.query(() => GruposService.getCiclos()),
+  createCiclo: gestorProcedure.input(createCicloEscolarSchema).mutation(({ input }) => GruposService.createCiclo(input)),
+  updateCiclo: gestorProcedure.input(updateCicloEscolarSchema).mutation(({ input }) => GruposService.updateCiclo(input)),
+  deleteCiclo: gestorProcedure.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteCiclo(input)),
 
   // --- Materias ---
   getMaterias: lecturaMaterias.query(() => GruposService.getMaterias()),
-  getDocentes: lecturaMaterias.query(() => GruposService.getDocentes()),
   createMateria: escrituraMaterias.input(createMateriaSchema).mutation(({ input }) => GruposService.createMateria(input)),
   updateMateria: escrituraMaterias.input(updateMateriaSchema).mutation(({ input }) => GruposService.updateMateria(input)),
   deleteMateria: escrituraMaterias.input(z.number().int().positive()).mutation(({ input }) => GruposService.deleteMateria(input)),
 
   // --- Grupos ---
-  getGrupos: lectura
+  getGrupos: protectedProcedure
     .input(z.object({ cicloId: z.number().int().positive().optional() }).optional())
     .query(({ input }) => GruposService.getGrupos(input?.cicloId)),
   createGrupo: escritura.input(createGrupoSchema).mutation(({ input }) => GruposService.createGrupo(input)),

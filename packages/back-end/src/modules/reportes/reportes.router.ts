@@ -20,5 +20,10 @@ export const reportesRouter = router({
     .input(ReporteAsistenciaSchema)
     .query(async ({ input }) => {
       return ReportesService.getListaAsistencia(input);
+    }),
+
+  reporteBecas: lectura
+    .query(async () => {
+      return ReportesService.getReporteBecas();
     })
 });

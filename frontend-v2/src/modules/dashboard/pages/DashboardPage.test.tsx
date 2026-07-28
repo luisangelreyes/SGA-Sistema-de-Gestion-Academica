@@ -35,6 +35,10 @@ vi.mock('lucide-react', () => ({
   CreditCard: () => React.createElement('div'),
   BarChart3: () => React.createElement('div'),
   Clock: () => React.createElement('div'),
+  BookOpen: () => React.createElement('div'),
+  Layers: () => React.createElement('div'),
+  GraduationCap: () => React.createElement('div'),
+  UserPlus: () => React.createElement('div'),
 }));
 
 // Mock store
@@ -50,6 +54,9 @@ const mockObtenerMetricas = vi.fn();
 const mockObtenerKpis = vi.fn();
 const mockObtenerIngresos = vi.fn();
 const mockObtenerPagos = vi.fn();
+const mockObtenerTopDeudores = vi.fn();
+const mockGetAllAlumnos = vi.fn();
+const mockGetGrupos = vi.fn();
 
 vi.mock('../../../lib/trpc', () => {
   return {
@@ -58,7 +65,14 @@ vi.mock('../../../lib/trpc', () => {
         obtenerMetricasInscripcion: { useQuery: () => mockObtenerMetricas() },
         obtenerKpisFinancieros: { useQuery: () => mockObtenerKpis() },
         obtenerIngresosUltimos7Dias: { useQuery: () => mockObtenerIngresos() },
-        obtenerUltimosPagos: { useQuery: () => mockObtenerPagos() }
+        obtenerUltimosPagos: { useQuery: () => mockObtenerPagos() },
+        obtenerTopDeudores: { useQuery: () => mockObtenerTopDeudores() }
+      },
+      alumnos: {
+        getAll: { useQuery: () => mockGetAllAlumnos() }
+      },
+      grupos: {
+        getGrupos: { useQuery: () => mockGetGrupos() }
       }
     }
   };
@@ -78,6 +92,9 @@ describe('DashboardPage Component', () => {
       ], 
       isLoading: false 
     });
+    mockObtenerTopDeudores.mockReturnValue({ data: [], isLoading: false });
+    mockGetAllAlumnos.mockReturnValue({ data: [], isLoading: false });
+    mockGetGrupos.mockReturnValue({ data: [], isLoading: false });
   });
 
   it('debería renderizar la vista de Administrador con todas las tarjetas', () => {
@@ -109,7 +126,7 @@ describe('DashboardPage Component', () => {
   });
 
   it('debería renderizar la vista de Docente limitando la información financiera', () => {
-    mockUser = { role: 'DOCENTE' };
+    mockUser = { role: 'CONTROL_ESCOLAR' };
 
     render(
       <BrowserRouter>

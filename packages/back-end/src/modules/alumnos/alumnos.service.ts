@@ -8,10 +8,10 @@ import type {
 
 export class AlumnosService {
   /**
-   * Obtiene la lista de alumnos activos
+   * Obtiene la lista de alumnos
    */
-  static async getAlumnos() {
-    return AlumnosRepository.getAlumnosActivos();
+  static async getAlumnos(incluirEliminados: boolean = false) {
+    return AlumnosRepository.getAlumnosActivos(incluirEliminados);
   }
 
   /**
@@ -35,6 +35,12 @@ export class AlumnosService {
     const existing = await AlumnosRepository.findAlumnoByCurpOrMatricula(input.curp || '', input.matricula);
 
     if (existing) {
+      if (existing.eliminadoEn) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Este alumno fue dado de baja anteriormente. Por favor, encuéntrelo en el filtro de "Alumnos Eliminados" y restáurelo manualmente.'
+        });
+      }
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Ya existe un alumno con ese CURP o Matrícula'
@@ -197,6 +203,24 @@ export class AlumnosService {
       });
 
       return alumno;
+    });
+  }
+
+  /**
+   * Restaurar un alumno eliminado (Soft Delete inverso)
+   */
+  static async restoreAlumno(alumnoId: number) {
+    const existing = await AlumnosRepository.getAlumnoDetail(alumnoId);
+    if (!existing || !existing.eliminadoEn) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Alumno no encontrado o no está eliminado' });
+    }
+
+    return prisma.alumno.update({
+      where: { alumnoId },
+      data: {
+        eliminadoEn: null,
+        estado: 'ACTIVO'
+      }
     });
   }
 

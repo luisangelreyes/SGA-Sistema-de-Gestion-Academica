@@ -48,6 +48,12 @@ export class PagosRepository {
     });
   }
 
+  static async getAdeudoById(calendarioPagoId: number) {
+    return prisma.calendarioPago.findUnique({
+      where: { calendarioPagoId }
+    });
+  }
+
   static async createAdeudo(data: Prisma.CalendarioPagoUncheckedCreateInput) {
     return prisma.calendarioPago.create({ data });
   }

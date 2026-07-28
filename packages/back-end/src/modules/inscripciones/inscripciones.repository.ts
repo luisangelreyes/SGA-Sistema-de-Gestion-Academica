@@ -31,7 +31,17 @@ export class InscripcionesRepository {
   static async getVentanas() {
     return prisma.ventanaInscripcionTemprana.findMany({
       where: { eliminadoEn: null },
-      include: { ciclo: true, beca: true, nivel: true },
+      include: { 
+        ciclo: true, 
+        beca: true, 
+        gradosAplicables: {
+          include: {
+            grado: {
+              include: { nivel: true }
+            }
+          }
+        } 
+      },
       orderBy: { fechaInicio: 'desc' }
     });
   }

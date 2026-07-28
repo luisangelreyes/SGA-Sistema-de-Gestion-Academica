@@ -48,4 +48,17 @@ export class ReportesService {
       registroDetallado: asistenciasRaw
     };
   }
+
+  static async getReporteBecas() {
+    const asignaciones = await ReportesRepository.getBecasActivas();
+
+    return asignaciones.map(a => ({
+      alumno: a.alumno.nombreCompleto,
+      matricula: a.alumno.matricula,
+      ciclo: a.ciclo.nombre,
+      beca: a.beca.nombreBeca,
+      porcentaje: `${Number(a.beca.porcentaje)}%`,
+      fechaAsignacion: a.fechaAsignacion,
+    }));
+  }
 }

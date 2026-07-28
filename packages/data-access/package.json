@@ -7,7 +7,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed-demo": "ts-node src/seed-demo.ts"
+    "db:seed-demo": "ts-node src/seed-demo.ts",
+    "db:seed-roles": "ts-node src/seed-roles.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0"

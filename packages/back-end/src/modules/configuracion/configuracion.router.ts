@@ -1,4 +1,5 @@
 import { router, protectedProcedure, hasModulePermission } from '../../trpc';
+import { z } from 'zod';
 import { updateConfigSchema } from './configuracion.schema';
 import { ConfiguracionService } from './configuracion.service';
 
@@ -21,5 +22,22 @@ export const configuracionRouter = router({
     .input(updateConfigSchema)
     .mutation(async ({ input }) => {
       return ConfiguracionService.updateConfiguracion(input);
+    }),
+
+  /**
+   * Exportar respaldo de base de datos
+   */
+  exportBackup: escritura
+    .mutation(async () => {
+      return ConfiguracionService.exportarBackup();
+    }),
+
+  /**
+   * Importar respaldo de base de datos
+   */
+  importBackup: escritura
+    .input(z.string())
+    .mutation(async ({ input }) => {
+      return ConfiguracionService.importarBackup(input);
     })
 });

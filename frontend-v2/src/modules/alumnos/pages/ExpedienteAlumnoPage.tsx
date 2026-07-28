@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { trpc } from '../../../lib/trpc';
-import { ChevronLeft, User, Crown, Mail, Phone, BookOpen, Users, Link2Off, Plus, Calculator, Trash2, UploadCloud, Eye } from 'lucide-react';
+import { ChevronLeft, User, Crown, Mail, Phone, BookOpen, Users, Link2Off, Plus, Calculator, Trash2, UploadCloud, Eye, X, Download } from 'lucide-react';
 import { useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { VincularTutorModal } from '../components/VincularTutorModal';
@@ -17,6 +17,12 @@ export function ExpedienteAlumnoPage() {
   const [isInscribirModalOpen, setIsInscribirModalOpen] = useState(false);
   const [isAsignarPlanModalOpen, setIsAsignarPlanModalOpen] = useState(false);
   const [isAsignarBecaModalOpen, setIsAsignarBecaModalOpen] = useState(false);
+
+  // Document Viewer State
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState('');
+  const [viewerType, setViewerType] = useState('');
+  const [viewerName, setViewerName] = useState('');
 
   const alumnoId = parseInt(id || '0', 10);
   
@@ -114,14 +120,24 @@ export function ExpedienteAlumnoPage() {
       
       const blob = new Blob([bytes], { type: data.mime });
       const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
       
-      // Cleanup de la URL (opcional, aunque si se recarga se borra sola, un timeout simple sirve)
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      setViewerUrl(blobUrl);
+      setViewerType(data.mime);
+      setViewerName(data.nombre);
+      setViewerOpen(true);
+      
     } catch (error: any) {
       toast.dismiss(toastId);
       toast.error(error.message || 'Error al visualizar el comprobante');
     }
+  };
+
+  const closeViewer = () => {
+    setViewerOpen(false);
+    setTimeout(() => {
+      URL.revokeObjectURL(viewerUrl);
+      setViewerUrl('');
+    }, 300);
   };
 
   const handleQuitarPlan = (inscripcionId: number) => {
@@ -172,8 +188,17 @@ export function ExpedienteAlumnoPage() {
           <ChevronLeft size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-800">{alumno.nombreCompleto}</h1>
-          <p className="text-gray-500">Matrícula: {alumno.matricula || 'Sin matrícula'}</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-800">{alumno.nombreCompleto}</h1>
+            {alumno.estado === 'ACTIVO' ? (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">Activo</span>
+            ) : alumno.estado.includes('BAJA') ? (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{alumno.estado.replace('_', ' ')}</span>
+            ) : (
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{alumno.estado.replace('_', ' ')}</span>
+            )}
+          </div>
+          <p className="text-gray-500 mt-1">Matrícula: {alumno.matricula || 'Sin matrícula'}</p>
         </div>
       </div>
 
@@ -209,6 +234,18 @@ export function ExpedienteAlumnoPage() {
               <p className="text-sm text-gray-500 mb-1">Nivel Educativo</p>
               <p className="font-medium text-gray-900">{alumno.nivel?.nombre || '-'}</p>
             </div>
+            {alumno.estado.includes('BAJA') && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Fecha de Baja</p>
+                  <p className="font-medium text-gray-900">{alumno.fechaBaja ? formatFecha(alumno.fechaBaja) : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Motivo de Baja</p>
+                  <p className="font-medium text-gray-900">{alumno.motivoBaja || '-'}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -516,6 +553,44 @@ export function ExpedienteAlumnoPage() {
           cicloId={inscripcionActual.cicloId}
           onClose={() => setIsAsignarBecaModalOpen(false)}
         />
+      )}
+
+      {/* Document Viewer Modal */}
+      {viewerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+              <h3 className="font-bold text-gray-800 truncate pr-4">{viewerName || 'Comprobante'}</h3>
+              <div className="flex gap-2 shrink-0">
+                <a 
+                  href={viewerUrl} 
+                  download={viewerName || 'comprobante'} 
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Descargar Original"
+                >
+                  <Download size={20} />
+                </a>
+                <button onClick={closeViewer} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4">
+              {viewerType.startsWith('image/') ? (
+                <img src={viewerUrl} alt="Comprobante" className="max-w-full max-h-full object-contain rounded shadow-sm" />
+              ) : viewerType === 'application/pdf' ? (
+                <iframe src={viewerUrl} className="w-full h-full rounded shadow-sm" title="Comprobante PDF" />
+              ) : (
+                <div className="text-center p-8 bg-white rounded-xl shadow-sm">
+                  <p className="text-gray-600 mb-4">El formato de este archivo ({viewerType}) no se puede previsualizar en el navegador.</p>
+                  <a href={viewerUrl} download={viewerName} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <Download size={18} /> Descargar Archivo
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
