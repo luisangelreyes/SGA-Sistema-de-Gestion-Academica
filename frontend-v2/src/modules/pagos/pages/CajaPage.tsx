@@ -69,7 +69,9 @@ export function CajaPage() {
     { enabled: !!selectedAlumnoId }
   );
 
-  const tutoresVinculados = alumnoDetail?.tutoresAlumnos ?? [];
+  const tutoresVinculados = (alumnoDetail?.tutoresAlumnos && alumnoDetail.tutoresAlumnos.length > 0)
+    ? alumnoDetail.tutoresAlumnos
+    : (selectedAlumno?.tutoresAlumnos ?? []);
 
   // Resolver tutor automáticamente si cambia el alumno o si no hay tutor válido seleccionado
   useEffect(() => {
@@ -82,17 +84,20 @@ export function CajaPage() {
           const defaultTutorId = principal?.tutorId || tutores[0]?.tutorId || null;
           setSelectedTutorId(defaultTutorId);
         }
-      } else {
-        setSelectedTutorId(null);
       }
     }
-  }, [alumnoDetail?.alumnoId, selectedTutorId]);
+  }, [alumnoDetail?.alumnoId, (alumnoDetail?.tutoresAlumnos || []).length, selectedTutorId]);
 
   // Al seleccionar un alumno
   const handleSelectAlumno = (alumno: any, tutorId?: number | null) => {
     setSelectedAlumnoId(alumno.alumnoId);
     setSelectedAlumno(alumno);
-    setSelectedTutorId(tutorId && tutorId > 0 ? tutorId : null);
+    const tutores = alumno?.tutoresAlumnos || [];
+    const principal = tutores.find((ta: any) => ta.esPrincipal);
+    const resolvedTutorId = tutorId && tutorId > 0 
+      ? tutorId 
+      : (principal?.tutorId || tutores[0]?.tutorId || null);
+    setSelectedTutorId(resolvedTutorId);
     setSearchTerm('');
     setAdeudosSeleccionados([]);
   };

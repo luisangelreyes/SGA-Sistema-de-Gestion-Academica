@@ -11,8 +11,9 @@ export class AlumnosRepository {
         nivel: true,
         grado: true,
         tutoresAlumnos: {
-          where: { esPrincipal: true, tutor: { eliminadoEn: null } },
-          include: { tutor: true }
+          where: { tutor: { eliminadoEn: null } },
+          include: { tutor: true },
+          orderBy: { esPrincipal: 'desc' }
         },
         inscripciones: {
           where: { estadoEnCiclo: 'INSCRITO', ciclo: { activo: true }, eliminadoEn: null },

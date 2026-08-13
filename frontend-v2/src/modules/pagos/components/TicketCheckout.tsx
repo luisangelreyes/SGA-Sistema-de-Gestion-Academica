@@ -123,7 +123,19 @@ export function TicketCheckout({
     }
   });
 
-  const isSinTutor = !tutorId || Number(tutorId) <= 0 || tutores.length === 0;
+  const tutorEfectivoId = (tutorId && Number(tutorId) > 0)
+    ? Number(tutorId)
+    : (tutores && tutores.length > 0
+      ? Number(tutores.find(t => t.esPrincipal)?.tutorId || tutores[0].tutorId)
+      : null);
+
+  useEffect(() => {
+    if (tutorEfectivoId && tutorEfectivoId !== tutorId && onSelectTutor) {
+      onSelectTutor(tutorEfectivoId);
+    }
+  }, [tutorEfectivoId, tutorId, onSelectTutor]);
+
+  const isSinTutor = !tutorEfectivoId || (tutores && tutores.length === 0);
   const isCobroDisabled = registrarMutation.isPending || adeudosSeleccionados.length === 0 || isSinTutor;
 
   const handleCobrar = () => {
@@ -131,7 +143,7 @@ export function TicketCheckout({
       toast.error('Selecciona al menos un adeudo a cobrar');
       return;
     }
-    if (!tutorId || Number(tutorId) <= 0) {
+    if (!tutorEfectivoId || Number(tutorEfectivoId) <= 0) {
       toast.error('El alumno no tiene un tutor válido asignado o seleccionado para registrar el cobro.');
       return;
     }
@@ -158,35 +170,30 @@ export function TicketCheckout({
       if (saldoRestante <= 0) break;
 
       const deuda = Number(adeudo.saldoPendiente);
-      const aplicadoAEstaDeuda = Math.min(saldoRestante, deuda);
+      const abono = Math.min(saldoRestante, deuda);
 
-      aplicaciones.push({
-        calendarioPagoId: adeudo.calendarioPagoId,
-        montoAplicado: aplicadoAEstaDeuda,
-        aplicadoA: 'CAPITAL' as const
-      });
-
-      saldoRestante -= aplicadoAEstaDeuda;
-    }
-
-    if (aplicaciones.length === 0) {
-      toast.error('Error calculando la distribución del pago.');
-      return;
+      if (abono > 0) {
+        aplicaciones.push({
+          calendarioPagoId: adeudo.calendarioPagoId,
+          montoAplicado: abono,
+          aplicadoA: 'CAPITAL' as const
+        });
+        saldoRestante -= abono;
+      }
     }
 
     registrarMutation.mutate({
       alumnoId,
-      tutorId: Number(tutorId),
+      tutorId: Number(tutorEfectivoId),
       fechaPago: new Date().toISOString(),
       montoTotal: monto,
       metodoPago,
+      observaciones: observaciones ? observaciones.trim() : undefined,
       requiereFactura,
-      observaciones: observaciones || undefined,
-      aplicadoASaldo: false,
-      aplicaciones,
       comprobanteBase64: comprobanteBase64 || undefined,
       comprobanteNombre: archivoComprobante?.name || undefined,
-      comprobanteMime: archivoComprobante?.type || undefined
+      comprobanteMime: archivoComprobante?.type || undefined,
+      aplicaciones
     });
   };
 
@@ -248,7 +255,7 @@ export function TicketCheckout({
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tutor que realiza el pago</label>
               <select
-                value={tutorId || ''}
+                value={tutorEfectivoId || ''}
                 onChange={(e) => onSelectTutor?.(Number(e.target.value))}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               >
