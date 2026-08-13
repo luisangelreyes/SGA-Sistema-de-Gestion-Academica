@@ -130,8 +130,9 @@ export const dashboardRouter = router({
           alumno: {
             include: {
               tutoresAlumnos: {
-                where: { esPrincipal: true },
-                include: { tutor: true }
+                where: { tutor: { eliminadoEn: null } },
+                include: { tutor: true },
+                orderBy: { esPrincipal: 'desc' }
               }
             }
           }
@@ -180,8 +181,9 @@ export const dashboardRouter = router({
             include: {
               nivel: true,
               tutoresAlumnos: {
-                where: { esPrincipal: true },
-                include: { tutor: true }
+                where: { tutor: { eliminadoEn: null } },
+                include: { tutor: true },
+                orderBy: { esPrincipal: 'desc' }
               }
             }
           }
@@ -189,12 +191,12 @@ export const dashboardRouter = router({
       });
 
       // 2. Agrupar por alumno para no omitir a hermanos en distintos niveles
-      const pendientesMap = new Map<number, { tutorId: number, nombreTutor: string, alumnoId: number, nombreAlumno: string, deudaMonto: number, nivelNombre: string }>();
+      const pendientesMap = new Map<number, { tutorId: number | null, nombreTutor: string, alumnoId: number, nombreAlumno: string, deudaMonto: number, nivelNombre: string }>();
 
       for (const a of adeudos) {
-        const relacionPrincipal = a.alumno.tutoresAlumnos[0];
-        const tutorId = relacionPrincipal?.tutor?.tutorId || -a.alumno.alumnoId;
-        const nombreTutor = relacionPrincipal?.tutor?.nombreCompleto || 'Sin Tutor Asignado';
+        const relacionTutor = a.alumno.tutoresAlumnos[0];
+        const tutorId = relacionTutor?.tutor?.tutorId ?? null;
+        const nombreTutor = relacionTutor?.tutor?.nombreCompleto || 'Sin Tutor Asignado';
         const alumnoId = a.alumno.alumnoId;
         
         const current = pendientesMap.get(alumnoId) || {

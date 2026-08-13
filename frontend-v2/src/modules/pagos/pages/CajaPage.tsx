@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '../../../lib/trpc';
 import { Search, User, FileText, AlertCircle, PlusCircle, CheckSquare, Square, Edit3, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -63,11 +63,41 @@ export function CajaPage() {
     { enabled: !!selectedAlumnoId }
   );
 
+  // 3. Detalle completo del alumno (incluye todos los tutores vinculados)
+  const { data: alumnoDetail } = trpc.alumnos.getById.useQuery(
+    selectedAlumnoId as number,
+    { enabled: !!selectedAlumnoId }
+  );
+
+  const tutoresVinculados = (alumnoDetail?.tutoresAlumnos && alumnoDetail.tutoresAlumnos.length > 0)
+    ? alumnoDetail.tutoresAlumnos
+    : (selectedAlumno?.tutoresAlumnos ?? []);
+
+  // Resolver tutor automáticamente si cambia el alumno o si no hay tutor válido seleccionado
+  useEffect(() => {
+    if (alumnoDetail) {
+      const tutores = alumnoDetail.tutoresAlumnos || [];
+      if (tutores.length > 0) {
+        const tutorActualExiste = selectedTutorId ? tutores.some((ta: any) => ta.tutorId === selectedTutorId) : false;
+        if (!tutorActualExiste) {
+          const principal = tutores.find((ta: any) => ta.esPrincipal);
+          const defaultTutorId = principal?.tutorId || tutores[0]?.tutorId || null;
+          setSelectedTutorId(defaultTutorId);
+        }
+      }
+    }
+  }, [alumnoDetail?.alumnoId, (alumnoDetail?.tutoresAlumnos || []).length, selectedTutorId]);
+
   // Al seleccionar un alumno
   const handleSelectAlumno = (alumno: any, tutorId?: number | null) => {
     setSelectedAlumnoId(alumno.alumnoId);
     setSelectedAlumno(alumno);
-    setSelectedTutorId(tutorId || null);
+    const tutores = alumno?.tutoresAlumnos || [];
+    const principal = tutores.find((ta: any) => ta.esPrincipal);
+    const resolvedTutorId = tutorId && tutorId > 0 
+      ? tutorId 
+      : (principal?.tutorId || tutores[0]?.tutorId || null);
+    setSelectedTutorId(resolvedTutorId);
     setSearchTerm('');
     setAdeudosSeleccionados([]);
   };
@@ -168,17 +198,17 @@ export function CajaPage() {
                   <User size={24} />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800 text-lg leading-tight truncate max-w-[300px]" title={selectedAlumno?.nombreCompleto}>
-                    {selectedAlumno?.nombreCompleto || 'Alumno Seleccionado'}
+                  <h2 className="font-bold text-slate-800 text-lg leading-tight truncate max-w-[300px]" title={alumnoDetail?.nombreCompleto || selectedAlumno?.nombreCompleto}>
+                    {alumnoDetail?.nombreCompleto || selectedAlumno?.nombreCompleto || 'Alumno Seleccionado'}
                   </h2>
                   <p className="text-sm text-slate-500 font-medium mt-0.5">
-                    {selectedAlumno?.nivel?.nombre || 'Sin Nivel'} • {selectedAlumno?.grado?.nombre || 'Sin Grado'}
+                    {alumnoDetail?.nivel?.nombre || selectedAlumno?.nivel?.nombre || 'Sin Nivel'} • {alumnoDetail?.grado?.nombre || selectedAlumno?.grado?.nombre || 'Sin Grado'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  const cicloExtraId = selectedAlumno?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId;
+                  const cicloExtraId = alumnoDetail?.inscripciones?.[0]?.cicloId || selectedAlumno?.inscripciones?.[0]?.cicloId || adeudos?.[0]?.cicloId;
                   if (!cicloExtraId) {
                     toast.error('El alumno seleccionado no tiene un ciclo escolar activo ni adeudos previos. No se puede crear un cargo extra.');
                     return;
@@ -273,6 +303,8 @@ export function CajaPage() {
             <TicketCheckout
               alumnoId={selectedAlumnoId}
               tutorId={selectedTutorId}
+              tutores={tutoresVinculados}
+              onSelectTutor={setSelectedTutorId}
               adeudosSeleccionados={adeudosSeleccionados}
               onCheckoutSuccess={handleCheckoutSuccess}
             />
@@ -331,7 +363,7 @@ export function CajaPage() {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleSelectAlumno(deudor.alumnoId, deudor.tutorId)}
+                        onClick={() => handleSelectAlumno(deudor, deudor.tutorId)}
                         className="px-4 py-3 bg-red-600 text-white font-bold text-xs rounded-xl hover:bg-red-700 shadow-md shadow-red-600/20 transition-all shrink-0"
                       >
                         COBRAR
@@ -376,7 +408,7 @@ export function CajaPage() {
                             </p>
                           </div>
                           <button
-                            onClick={() => handleSelectAlumno(cuenta.alumnoId, cuenta.tutorId)}
+                            onClick={() => handleSelectAlumno(cuenta, cuenta.tutorId)}
                             className="px-4 py-3 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all shrink-0"
                           >
                             COBRAR
