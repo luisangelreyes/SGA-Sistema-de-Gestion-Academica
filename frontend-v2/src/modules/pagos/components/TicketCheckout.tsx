@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '../../../lib/trpc';
 import { ReciboPrintTemplate } from './ReciboPrintTemplate';
-import { CreditCard, Banknote, ReceiptText, Save, UploadCloud, X } from 'lucide-react';
+import { CreditCard, Banknote, ReceiptText, Save, UploadCloud, X, User, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Adeudo {
@@ -11,14 +11,36 @@ interface Adeudo {
   fechaVencimiento: string;
 }
 
+interface TutorVinculado {
+  tutorAlumnoId?: number;
+  tutorId: number;
+  esPrincipal?: boolean | null;
+  parentesco?: string | null;
+  tutor?: {
+    tutorId: number;
+    nombreCompleto: string;
+    telefono?: string | null;
+    correoElectronico?: string | null;
+  } | null;
+}
+
 interface TicketCheckoutProps {
   alumnoId: number;
   tutorId?: number | null;
+  tutores?: TutorVinculado[];
+  onSelectTutor?: (tutorId: number) => void;
   adeudosSeleccionados: Adeudo[];
   onCheckoutSuccess: () => void;
 }
 
-export function TicketCheckout({ alumnoId, tutorId, adeudosSeleccionados, onCheckoutSuccess }: TicketCheckoutProps) {
+export function TicketCheckout({
+  alumnoId,
+  tutorId,
+  tutores = [],
+  onSelectTutor,
+  adeudosSeleccionados,
+  onCheckoutSuccess
+}: TicketCheckoutProps) {
   const totalAdeudos = adeudosSeleccionados.reduce((acc, curr) => acc + Number(curr.saldoPendiente), 0);
   
   const [montoPago, setMontoPago] = useState<string>(totalAdeudos.toString());
@@ -101,13 +123,16 @@ export function TicketCheckout({ alumnoId, tutorId, adeudosSeleccionados, onChec
     }
   });
 
+  const isSinTutor = !tutorId || Number(tutorId) <= 0 || tutores.length === 0;
+  const isCobroDisabled = registrarMutation.isPending || adeudosSeleccionados.length === 0 || isSinTutor;
+
   const handleCobrar = () => {
     if (adeudosSeleccionados.length === 0) {
       toast.error('Selecciona al menos un adeudo a cobrar');
       return;
     }
-    if (!tutorId) {
-      toast.error('El alumno no tiene un tutor principal vinculado.');
+    if (!tutorId || Number(tutorId) <= 0) {
+      toast.error('El alumno no tiene un tutor válido asignado o seleccionado para registrar el cobro.');
       return;
     }
     const monto = Number(montoPago.replace(/,/g, ''));
@@ -151,7 +176,7 @@ export function TicketCheckout({ alumnoId, tutorId, adeudosSeleccionados, onChec
 
     registrarMutation.mutate({
       alumnoId,
-      tutorId,
+      tutorId: Number(tutorId),
       fechaPago: new Date().toISOString(),
       montoTotal: monto,
       metodoPago,
@@ -187,6 +212,54 @@ export function TicketCheckout({ alumnoId, tutorId, adeudosSeleccionados, onChec
             <span>Total Adeudado:</span>
             <span>${totalAdeudos.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
           </div>
+        </div>
+
+        {/* Sección de Tutor Responsable / Pagador */}
+        <div>
+          {tutores.length === 0 ? (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+              <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+              <div>
+                <h4 className="font-bold text-amber-900 text-sm">Alumno sin tutor vinculado</h4>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  Este alumno no cuenta con tutores registrados en el sistema. Debes vincular un tutor al alumno desde el módulo de <strong>Alumnos</strong> para poder emitir recibos y registrar cobros.
+                </p>
+              </div>
+            </div>
+          ) : tutores.length === 1 ? (
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tutor Responsable</label>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                    <User size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{tutores[0].tutor?.nombreCompleto || 'Tutor'}</p>
+                    <p className="text-[11px] text-slate-500">{tutores[0].parentesco || 'Tutor'}{tutores[0].esPrincipal ? ' • Principal' : ''}</p>
+                  </div>
+                </div>
+                {tutores[0].esPrincipal && (
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-md">Principal</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tutor que realiza el pago</label>
+              <select
+                value={tutorId || ''}
+                onChange={(e) => onSelectTutor?.(Number(e.target.value))}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              >
+                {tutores.map((t) => (
+                  <option key={t.tutorId} value={t.tutorId}>
+                    {t.tutor?.nombreCompleto || `Tutor #${t.tutorId}`} ({t.parentesco || 'Tutor'}{t.esPrincipal ? ' - Principal' : ''})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="h-px bg-slate-100 w-full" />
@@ -274,17 +347,15 @@ export function TicketCheckout({ alumnoId, tutorId, adeudosSeleccionados, onChec
           )}
         </div>
 
-
-
         {/* Botón de Cobro Movido Arriba */}
         <div className="pt-4">
           <button
             onClick={handleCobrar}
-            disabled={registrarMutation.isPending || adeudosSeleccionados.length === 0}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl rounded-2xl shadow-lg shadow-emerald-600/30 transition-all flex justify-center items-center gap-3 disabled:opacity-50 disabled:shadow-none"
+            disabled={isCobroDisabled}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl rounded-2xl shadow-lg shadow-emerald-600/30 transition-all flex justify-center items-center gap-3 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
           >
             <Save size={24} />
-            {registrarMutation.isPending ? 'Procesando...' : 'Cobrar Ticket'}
+            {registrarMutation.isPending ? 'Procesando...' : isSinTutor ? 'Requiere Tutor para Cobrar' : 'Cobrar Ticket'}
           </button>
         </div>
       </div>
