@@ -333,7 +333,7 @@ export function CajaPage() {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleSelectAlumno(deudor.alumnoId, deudor.tutorId)}
+                        onClick={() => handleSelectAlumno(deudor, deudor.tutorId)}
                         className="px-4 py-3 bg-red-600 text-white font-bold text-xs rounded-xl hover:bg-red-700 shadow-md shadow-red-600/20 transition-all shrink-0"
                       >
                         COBRAR
@@ -378,7 +378,7 @@ export function CajaPage() {
                             </p>
                           </div>
                           <button
-                            onClick={() => handleSelectAlumno(cuenta.alumnoId, cuenta.tutorId)}
+                            onClick={() => handleSelectAlumno(cuenta, cuenta.tutorId)}
                             className="px-4 py-3 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all shrink-0"
                           >
                             COBRAR
