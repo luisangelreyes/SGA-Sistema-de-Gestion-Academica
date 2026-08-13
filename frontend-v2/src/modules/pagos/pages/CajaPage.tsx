@@ -71,7 +71,6 @@ export function CajaPage() {
     setSearchTerm('');
     setAdeudosSeleccionados([]);
 
-    setIsCargoModalOpen(true);
   };
 
   // Toggle de un adeudo
