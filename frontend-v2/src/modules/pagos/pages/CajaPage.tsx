@@ -70,6 +70,8 @@ export function CajaPage() {
     setSelectedTutorId(tutorId || null);
     setSearchTerm('');
     setAdeudosSeleccionados([]);
+
+    setIsCargoModalOpen(true);
   };
 
   // Toggle de un adeudo
